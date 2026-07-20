@@ -1,0 +1,3512 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>3D Modeler</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+:root {
+  --bg0: #1c1c1e;
+  --bg1: #242426;
+  --bg2: #2c2c2e;
+  --bg3: #363638;
+  --border: #3a3a3c;
+  --border2: #48484a;
+  --text0: #f2f2f7;
+  --text1: #aeaeb2;
+  --text2: #6c6c70;
+  --accent: #ff6b35;
+  --accent2: #ff8c5a;
+  --blue: #4da3ff;
+  --green: #32d74b;
+  --red: #ff453a;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: var(--bg0); color: var(--text0); font-family: 'Inter', system-ui, sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+
+#header { background: var(--bg1); padding: 5px 14px; display: flex; align-items: center; gap: 6px; border-bottom: 1px solid var(--border); flex-shrink: 0; height: 36px; }
+#header h1 { font-size: 12px; color: var(--accent); letter-spacing: 3px; font-weight: 600; margin-right: 4px; }
+.mode-btn { padding: 3px 10px; border: 1px solid var(--border2); background: transparent; color: var(--text1); cursor: pointer; border-radius: 5px; font-size: 11px; font-family: inherit; font-weight: 500; transition: all 0.12s; letter-spacing: 0.3px; }
+.mode-btn:hover { background: var(--bg3); color: var(--text0); border-color: var(--border2); }
+.mode-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.sep { width: 1px; height: 18px; background: var(--border); margin: 0 3px; }
+
+#main { display: flex; flex: 1; overflow: hidden; }
+
+#toolbar { width: 46px; background: var(--bg1); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding: 8px 0; gap: 3px; overflow-y: auto; flex-shrink: 0; }
+.tool-btn { width: 34px; height: 34px; min-height: 34px; border: 1px solid transparent; background: transparent; color: var(--text2); cursor: pointer; border-radius: 7px; font-size: 10px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 2px; transition: all 0.12s; }
+.tool-btn:hover { background: var(--bg3); color: var(--text0); border-color: var(--border2); }
+.tool-btn.active { background: var(--accent); color: #fff; border-color: transparent; }
+.tool-btn span { font-size: 6.5px; line-height: 1; font-weight: 600; letter-spacing: 0.3px; }
+.tool-sep { width: 24px; height: 1px; background: var(--border); margin: 3px 0; flex-shrink: 0; }
+
+#viewport { flex: 1; position: relative; overflow: hidden; cursor: crosshair; }
+canvas { display: block; width: 100%; height: 100%; }
+
+#sidebar { width: 204px; background: var(--bg1); border-left: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; flex-shrink: 0; }
+.panel { border-bottom: 1px solid var(--border); }
+.panel-header { padding: 6px 10px; background: var(--bg2); font-size: 10px; color: var(--text2); text-transform: uppercase; letter-spacing: 1.2px; font-weight: 600; cursor: pointer; user-select: none; }
+.panel-body { padding: 8px 10px; }
+.prop-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 11px; }
+.prop-label { color: var(--text2); font-size: 10.5px; }
+.num-input { width: 54px; background: var(--bg0); border: 1px solid var(--border); color: var(--text0); padding: 2px 5px; font-size: 11px; font-family: 'Inter', inherit; border-radius: 4px; text-align: right; transition: border 0.1s; }
+.num-input:focus { outline: none; border-color: var(--blue); }
+.btn-sm { padding: 5px 8px; background: var(--bg2); border: 1px solid var(--border); color: var(--text1); cursor: pointer; border-radius: 5px; font-size: 11px; font-family: inherit; font-weight: 500; transition: all 0.12s; width: 100%; margin-bottom: 4px; text-align: left; }
+.btn-sm:hover { background: var(--bg3); color: var(--text0); border-color: var(--border2); }
+.btn-sm.danger { border-color: var(--red); color: var(--red); background: transparent; }
+.btn-sm.danger:hover { background: var(--red); color: #fff; }
+.btn-sm.primary { border-color: var(--blue); color: var(--blue); background: transparent; }
+.btn-sm.primary:hover { background: var(--blue); color: #fff; }
+
+.objects-list { max-height: 120px; overflow-y: auto; }
+.obj-item { padding: 4px 6px; font-size: 11px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 6px; color: var(--text1); transition: all 0.1s; }
+.obj-item:hover { background: var(--bg3); color: var(--text0); }
+.obj-item.selected { background: var(--accent); color: #fff; }
+.obj-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+
+#statusbar { background: var(--bg1); padding: 3px 14px; font-size: 10px; color: var(--text2); border-top: 1px solid var(--border); display: flex; gap: 16px; flex-shrink: 0; align-items: center; }
+.stat { display: flex; gap: 4px; }
+.stat-val { color: var(--text1); font-weight: 500; }
+
+#ctx-menu { position: fixed; background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px; padding: 4px 0; z-index: 1000; display: none; min-width: 150px; box-shadow: 0 8px 32px rgba(0,0,0,0.5); backdrop-filter: blur(8px); }
+.ctx-item { padding: 6px 14px; font-size: 11.5px; cursor: pointer; color: var(--text1); transition: all 0.1s; font-weight: 500; }
+.ctx-item:hover { background: var(--bg3); color: var(--text0); }
+.ctx-sep { height: 1px; background: var(--border); margin: 3px 0; }
+.ctx-label { padding: 4px 14px 2px; font-size: 9.5px; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+
+#toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: var(--bg2); border: 1px solid var(--border2); color: var(--text0); padding: 7px 18px; border-radius: 8px; font-size: 12px; font-weight: 500; pointer-events: none; opacity: 0; transition: opacity 0.25s; z-index: 2000; box-shadow: 0 4px 20px rgba(0,0,0,0.4); }
+
+.sidebar-scroll { overflow-y: auto; flex: 1; }
+.sidebar-scroll::-webkit-scrollbar { width: 4px; }
+.sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+#toolbar::-webkit-scrollbar { width: 3px; }
+#toolbar::-webkit-scrollbar-thumb { background: var(--border); }
+
+input[type=file] { display: none; }
+#grid-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+#view-labels { font-family: 'Inter', system-ui, sans-serif !important; font-size: 10px !important; }
+.btn-quad-active { background: var(--accent) !important; border-color: var(--accent) !important; color: #fff !important; }
+
+/* ── MOBILE ── */
+* { -webkit-tap-highlight-color: transparent; touch-action: none; }
+body { overscroll-behavior: none; }
+
+/* Bottom toolbar on mobile */
+#mobile-bar { display: none; position: fixed; bottom: 0; left: 0; right: 0; height: 56px; background: var(--bg1); border-top: 1px solid var(--border); z-index: 500; align-items: center; justify-content: space-around; padding: 0 4px; }
+.mb-btn { flex: 1; height: 44px; max-width: 72px; background: transparent; border: none; color: var(--text1); font-size: 9px; font-family: inherit; font-weight: 600; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; cursor: pointer; border-radius: 8px; transition: background 0.1s; }
+.mb-btn:active, .mb-btn.active { background: var(--bg3); color: var(--accent); }
+.mb-btn svg { width: 20px; height: 20px; }
+
+/* Floating side panel toggle */
+#sidebar-toggle { display: none; position: fixed; top: 44px; right: 8px; width: 36px; height: 36px; background: var(--bg2); border: 1px solid var(--border2); border-radius: 8px; z-index: 600; align-items: center; justify-content: center; cursor: pointer; font-size: 16px; color: var(--text1); }
+
+/* Sidebar: overlay on mobile */
+@media (max-width: 768px) {
+  #header { height: auto; min-height: 36px; flex-wrap: wrap; padding: 4px 8px; gap: 4px; overflow-x: auto; }
+  #header h1 { font-size: 11px; }
+  .mode-btn { font-size: 10px; padding: 3px 7px; }
+  .sep { display: none; }
+  #toolbar { display: none; }
+  #sidebar { position: fixed; top: 0; right: -220px; width: 220px; height: 100%; z-index: 700; transition: right 0.25s cubic-bezier(.4,0,.2,1); box-shadow: -4px 0 24px rgba(0,0,0,0.5); }
+  #sidebar.open { right: 0; }
+  #sidebar-toggle { display: flex; }
+  #mobile-bar { display: flex; }
+  #statusbar { display: none; }
+  body { padding-bottom: 56px; }
+  canvas { touch-action: none; }
+  .tool-btn span { display: none; }
+}
+
+/* Touch ripple */
+@keyframes ripple { to { transform: scale(4); opacity: 0; } }
+.ripple { position: absolute; border-radius: 50%; width: 20px; height: 20px; background: rgba(255,255,255,0.2); animation: ripple 0.4s linear; pointer-events: none; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>3D MODELER</h1>
+  <div class="sep"></div>
+  <button class="mode-btn active" id="btn-object" onclick="setMode('object')" title="Object Mode (4)">OBJECT  <span style="opacity:0.5;font-size:9px">4</span></button>
+  <button class="mode-btn" id="btn-edit" onclick="setMode('edit')" title="Edit Mode">EDIT</button>
+  <button class="mode-btn" id="btn-sculpt" onclick="setMode('sculpt')" title="Sculpt Mode (5)">SCULPT</button>
+  <div class="sep"></div>
+  <button class="mode-btn" id="btn-vert" onclick="setSubMode('vertex')" style="display:none" title="Vertex (3)">VERTEX  <span style="opacity:0.5;font-size:9px">3</span></button>
+  <button class="mode-btn" id="btn-edge" onclick="setSubMode('edge')" style="display:none" title="Edge (2)">EDGE  <span style="opacity:0.5;font-size:9px">2</span></button>
+  <button class="mode-btn" id="btn-face" onclick="setSubMode('face')" style="display:none" title="Face (1)">FACE  <span style="opacity:0.5;font-size:9px">1</span></button>
+  <div class="sep"></div>
+  <button class="mode-btn" onclick="addMesh('cube')">+ Cube</button>
+  <button class="mode-btn" onclick="addMesh('sphere')">+ Sphere</button>
+  <button class="mode-btn" onclick="addMesh('cylinder')">+ Cylinder</button>
+  <button class="mode-btn" onclick="addMesh('plane')">+ Plane</button>
+  <div class="sep"></div>
+  <button class="mode-btn" id="btn-quad" onclick="toggleQuad()" title="Quad View (Q4)">QUAD</button>
+  <div class="sep"></div>
+  <button class="mode-btn" id="sym-x" onclick="toggleSym('x')" title="Mirror X (Shift+X)">SYM X</button>
+  <button class="mode-btn" id="sym-y" onclick="toggleSym('y')" title="Mirror Y (Shift+Y)">SYM Y</button>
+  <button class="mode-btn" id="sym-z" onclick="toggleSym('z')" title="Mirror Z (Shift+Z)">SYM Z</button>
+  <div class="sep"></div>
+  <button class="mode-btn" onclick="exportOBJ()">Export OBJ</button>
+  <label class="mode-btn" style="cursor:pointer" for="importFile">Import OBJ</label>
+  <input type="file" id="importFile" accept=".obj" onchange="importOBJ(this)">
+</div>
+
+<div id="main">
+  <div id="toolbar">
+    <button class="tool-btn active" id="tool-select" onclick="setTool('select')" title="Select (Q)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M2 2l6 12 2-4 4-2z"/></svg>
+      <span>SEL Q</span>
+    </button>
+    <button class="tool-btn" id="tool-lasso" onclick="setTool('lasso')" title="Lasso Select (L)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="2 1.5"><path d="M8 2c3 0 6 2 6 5s-2 4-4 4c-1 0-2-.5-2-1s1-1 1-2-1-2-3-2-4 1-4 3 2 3 4 3" stroke-dasharray="none"/><circle cx="8" cy="13" r="1" fill="currentColor" stroke="none"/></svg>
+      <span>LASSO L</span>
+    </button>
+    <button class="tool-btn" id="tool-move" onclick="setTool('move')" title="Move (W)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 2v12M2 8h12M8 2l-2 2M8 2l2 2M8 14l-2-2M8 14l2-2M2 8l2-2M2 8l2 2M14 8l-2-2M14 8l-2 2"/></svg>
+      <span>MOVE W</span>
+    </button>
+    <button class="tool-btn" id="tool-scale" onclick="setTool('scale')" title="Scale (S)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="10" height="10"/><line x1="1" y1="8" x2="3" y2="8"/><line x1="13" y1="8" x2="15" y2="8"/><line x1="8" y1="1" x2="8" y2="3"/><line x1="8" y1="13" x2="8" y2="15"/></svg>
+      <span>SCALE S</span>
+    </button>
+    <button class="tool-btn" id="tool-rotate" onclick="setTool('rotate')" title="Rotate (R)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8a5 5 0 1 1 2 4"/><path d="M3 12V8h4"/></svg>
+      <span>ROT R</span>
+    </button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" id="tool-extrude" onclick="setTool('extrude')" title="Extrude (E)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="8" width="12" height="6"/><rect x="4" y="2" width="8" height="6"/><line x1="4" y1="2" x2="2" y2="8"/><line x1="12" y1="2" x2="14" y2="8"/></svg>
+      <span>EXTRUDE E</span>
+    </button>
+    <button class="tool-btn" id="tool-merge" onclick="setTool('merge')" title="Merge (M)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="4" cy="4" r="2.5"/><circle cx="12" cy="12" r="2.5"/><path d="M6 6l4 4"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/></svg>
+      <span>MERGE M</span>
+    </button>
+    <button class="tool-btn" id="tool-loopcut" onclick="loopCut()" title="Loop Cut — select edge in edge mode first, or cuts auto">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12"/><line x1="8" y1="2" x2="8" y2="14" stroke="#ff6b35" stroke-width="2"/></svg>
+      <span>LOOP</span>
+    </button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" onclick="subdivide()" title="Subdivide">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="5" height="5"/><rect x="9" y="2" width="5" height="5"/><rect x="2" y="9" width="5" height="5"/><rect x="9" y="9" width="5" height="5"/></svg>
+      <span>SUBDIV</span>
+    </button>
+    <button class="tool-btn" onclick="deleteSelected()" title="Delete (Del)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="3" y1="3" x2="13" y2="13"/><line x1="13" y1="3" x2="3" y2="13"/></svg>
+      <span>DELETE</span>
+    </button>
+    <button class="tool-btn" onclick="duplicateSelected()" title="Duplicate">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="6" y="6" width="8" height="8"/><path d="M4 10H2V2h8v2"/></svg>
+      <span>DUPE</span>
+    </button>
+    <div class="tool-sep"></div>
+    <button class="tool-btn" onclick="undo()" title="Undo (Ctrl+Z)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 7a5 5 0 1 1 1 4"/><path d="M3 3v4h4"/></svg>
+      <span>UNDO</span>
+    </button>
+    <button class="tool-btn" onclick="redo()" title="Redo (Ctrl+Y)">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13 7a5 5 0 1 0-1 4"/><path d="M13 3v4h-4"/></svg>
+      <span>REDO</span>
+    </button>
+  </div>
+
+  <div id="viewport">
+    <canvas id="c"></canvas>
+    <canvas id="lasso-canvas" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></canvas>
+    <div id="view-labels" style="position:absolute;top:8px;right:8px;font-size:10px;color:#6060a0;text-align:right;pointer-events:none">
+      <div>MMB: Orbit</div>
+      <div>MMB+Shift: Pan</div>
+      <div>Scroll: Zoom</div>
+      <div>RMB: Menu</div>
+    </div>
+  </div>
+
+  <button id="sidebar-toggle" onclick="toggleSidebar()" title="Panel">☰</button>
+  <div id="sidebar">
+    <div class="sidebar-scroll">
+      <div class="panel">
+        <div class="panel-header">Objects</div>
+        <div class="panel-body">
+          <div class="objects-list" id="obj-list"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">Transform</div>
+        <div class="panel-body">
+          <div class="prop-row"><span class="prop-label">Loc X</span><input class="num-input" id="tx" type="number" step="0.1" onchange="applyTransform()"></div>
+          <div class="prop-row"><span class="prop-label">Loc Y</span><input class="num-input" id="ty" type="number" step="0.1" onchange="applyTransform()"></div>
+          <div class="prop-row"><span class="prop-label">Loc Z</span><input class="num-input" id="tz" type="number" step="0.1" onchange="applyTransform()"></div>
+          <div class="prop-row"><span class="prop-label">Rot X</span><input class="num-input" id="rx" type="number" step="1" onchange="applyTransform()"></div>
+          <div class="prop-row"><span class="prop-label">Rot Y</span><input class="num-input" id="ry" type="number" step="1" onchange="applyTransform()"></div>
+          <div class="prop-row"><span class="prop-label">Rot Z</span><input class="num-input" id="rz" type="number" step="1" onchange="applyTransform()"></div>
+          <div class="prop-row"><span class="prop-label">Scale X</span><input class="num-input" id="sx" type="number" step="0.1" onchange="applyTransform()"></div>
+          <div class="prop-row"><span class="prop-label">Scale Y</span><input class="num-input" id="sy" type="number" step="0.1" onchange="applyTransform()"></div>
+          <div class="prop-row"><span class="prop-label">Scale Z</span><input class="num-input" id="sz" type="number" step="0.1" onchange="applyTransform()"></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">Mesh</div>
+        <div class="panel-body">
+          <button class="btn-sm" onclick="addMesh('cube')">+ Add Cube</button>
+          <button class="btn-sm" onclick="addMesh('sphere')">+ Add Sphere</button>
+          <button class="btn-sm" onclick="addMesh('cylinder')">+ Add Cylinder</button>
+          <button class="btn-sm" onclick="addMesh('plane')">+ Add Plane</button>
+          <button class="btn-sm" onclick="addMesh('torus')">+ Add Torus</button>
+          <button class="btn-sm" onclick="addMesh('cone')">+ Add Cone</button>
+          <div style="height:6px"></div>
+          <button class="btn-sm primary" onclick="duplicateSelected()">Duplicate Object</button>
+          <button class="btn-sm primary" onclick="subdivide()">Subdivide</button>
+          <button class="btn-sm danger" onclick="deleteSelected()">Delete Object</button>
+          <button class="btn-sm" onclick="recalcNormals()">Recalc Normals (UE)</button>
+        </div>
+      </div>
+
+      <div class="panel" id="editpanel" style="display:none">
+        <div class="panel-header">Edit Mode</div>
+        <div class="panel-body">
+          <button class="btn-sm" onclick="selectAll()">Select All (A)</button>
+          <button class="btn-sm" onclick="invertSelection()">Invert Selection</button>
+          <button class="btn-sm primary" onclick="extrudeSelected()">Extrude (E)</button>
+          <button class="btn-sm primary" onclick="mergeVertices()">Merge Vertices (M)</button>
+          <button class="btn-sm primary" onclick="loopCut()">Loop Cut (select edge→cut)</button>
+          <button class="btn-sm" onclick="selectLinkedRing()">Ring Select (Ctrl+L)</button>
+          <button class="btn-sm danger" onclick="deleteEditSelected()">Delete Selected (Del)</button>
+          <div style="height:4px"></div>
+          <button class="btn-sm" onclick="flipNormals()">Flip Normals</button>
+          <button class="btn-sm" onclick="recalcNormals()">Recalc Normals</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">Symmetry</div>
+        <div class="panel-body">
+          <div class="prop-row" style="font-size:10px;color:var(--text2);margin-bottom:8px">Shift+RMB: place cursor</div>
+          <div id="sculpt-touch-hint" style="display:none;font-size:10px;color:var(--accent);margin-bottom:8px">📱 1 finger: paint • 2 fingers: orbit/zoom</div>
+          <div style="display:flex;gap:4px;margin-bottom:6px">
+            <button class="btn-sm" id="sp-x" onclick="toggleSym('x')" style="text-align:center;padding:4px">X</button>
+            <button class="btn-sm" id="sp-y" onclick="toggleSym('y')" style="text-align:center;padding:4px">Y</button>
+            <button class="btn-sm" id="sp-z" onclick="toggleSym('z')" style="text-align:center;padding:4px">Z</button>
+          </div>
+          <button class="btn-sm" onclick="cursor3D=V3(0,0,0);render();toast('Cursor reset')">Reset Cursor</button>
+          <button class="btn-sm" onclick="if(selectedObj){cursor3D=V3(selectedObj.position.x,selectedObj.position.y,selectedObj.position.z);render();toast('Cursor → Object')}">Cursor → Object</button>
+          <div style="height:4px"></div>
+          <button class="btn-sm primary" onclick="mirrorObject('x')">Mirror Object X</button>
+          <button class="btn-sm primary" onclick="mirrorObject('y')">Mirror Object Y</button>
+          <button class="btn-sm primary" onclick="mirrorObject('z')">Mirror Object Z</button>
+          <div style="height:4px"></div>
+          <button class="btn-sm primary" onclick="if(selectedObj)applyMirrorModifier(selectedObj);else toast('Select an object')">Apply Mirror</button>
+        </div>
+      </div>
+
+      <div class="panel" id="sculptpanel" style="display:none">
+        <div class="panel-header">Sculpt</div>
+        <div class="panel-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-bottom:8px">
+            <button class="btn-sm" id="sbrush-draw"    onclick="setSculptBrush('draw')"    style="text-align:center">Draw</button>
+            <button class="btn-sm" id="sbrush-smooth"  onclick="setSculptBrush('smooth')"  style="text-align:center">Smooth</button>
+            <button class="btn-sm" id="sbrush-flatten" onclick="setSculptBrush('flatten')" style="text-align:center">Flatten</button>
+            <button class="btn-sm" id="sbrush-pinch"   onclick="setSculptBrush('pinch')"   style="text-align:center">Pinch</button>
+            <button class="btn-sm" id="sbrush-inflate" onclick="setSculptBrush('inflate')" style="text-align:center">Inflate</button>
+            <button class="btn-sm" id="sbrush-crease"  onclick="setSculptBrush('crease')"  style="text-align:center">Crease</button>
+            <button class="btn-sm" id="sbrush-clay"    onclick="setSculptBrush('clay')"    style="text-align:center">Clay</button>
+            <button class="btn-sm" id="sbrush-scrape"  onclick="setSculptBrush('scrape')"  style="text-align:center">Scrape</button>
+          </div>
+          <div class="prop-row"><span class="prop-label">Radius</span>
+            <input type="range" id="sculpt-radius" min="10" max="200" value="50" style="width:100px" oninput="sculpt.radius=+this.value">
+          </div>
+          <div class="prop-row"><span class="prop-label">Strength</span>
+            <input type="range" id="sculpt-strength" min="1" max="100" value="30" style="width:100px" oninput="sculpt.strength=+this.value/100">
+          </div>
+          <div class="prop-row">
+            <span class="prop-label">Invert</span>
+            <input type="checkbox" id="sculpt-invert" onchange="sculpt.invert=this.checked">
+            <span class="prop-label" style="margin-left:8px">X-Mirror</span>
+            <input type="checkbox" id="sculpt-xmirror" onchange="sculpt.xmirror=this.checked">
+          </div>
+          <button class="btn-sm primary" onclick="sculptSubdivide()">Subdivide Mesh</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">View</div>
+        <div class="panel-body">
+          <button class="btn-sm" onclick="resetView()">Reset View</button>
+          <button class="btn-sm" onclick="viewPreset('front')">Front (Num 1)</button>
+          <button class="btn-sm" onclick="viewPreset('top')">Top (Num 7)</button>
+          <button class="btn-sm" onclick="viewPreset('right')">Right (Num 3)</button>
+          <button class="btn-sm" onclick="viewPreset('persp')">Persp (Num 5)</button>
+          <div style="height:4px"></div>
+          <div class="prop-row">
+            <span class="prop-label" style="font-size:11px">Wireframe</span>
+            <input type="checkbox" id="wireframe-toggle" onchange="toggleWireframe(this.checked)">
+          </div>
+          <div class="prop-row">
+            <span class="prop-label" style="font-size:11px">Grid</span>
+            <input type="checkbox" id="grid-toggle" checked onchange="toggleGrid(this.checked)">
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-header">File</div>
+        <div class="panel-body">
+          <button class="btn-sm primary" onclick="exportOBJ()">Export OBJ</button>
+          <label class="btn-sm primary" style="cursor:pointer;display:block" for="importFile">Import OBJ</label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Mobile bottom toolbar -->
+<div id="mobile-bar">
+  <button class="mb-btn" id="mb-sel" onclick="setTool('select');setMobileActive('mb-sel')">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4l9 18 3-6 6-3z"/></svg>SELECT
+  </button>
+  <button class="mb-btn" id="mb-move" onclick="startGizmo('move');setMobileActive('mb-move')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 4v16M4 12h16"/><path d="M8 8l-4 4 4 4M16 8l4 4-4 4M8 8l4-4 4 4M8 16l4 4 4-4"/></svg>MOVE
+  </button>
+  <button class="mb-btn" id="mb-extrude" onclick="extrudeSelected()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="14" width="16" height="8"/><rect x="7" y="4" width="10" height="10"/><line x1="7" y1="4" x2="4" y2="14"/><line x1="17" y1="4" x2="20" y2="14"/></svg>EXTRUDE
+  </button>
+  <button class="mb-btn" id="mb-loop" onclick="loopCut()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18"/><line x1="12" y1="3" x2="12" y2="21" stroke="#ff6b35" stroke-width="2.5"/></svg>LOOP
+  </button>
+  <button class="mb-btn" id="mb-sculpt" onclick="setMode('sculpt');setMobileActive('mb-sculpt')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20c4.4 0 8-3.6 8-8S16.4 4 12 4 4 7.6 4 12s3.6 8 8 8z"/><path d="M8 14s1.5-2 4-2 4 2 4 2"/></svg>SCULPT
+  </button>
+  <button class="mb-btn" id="mb-panel" onclick="toggleSidebar()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="15" y1="3" x2="15" y2="21"/></svg>PANEL
+  </button>
+</div>
+
+<div id="statusbar">
+  <div class="stat"><span>Mode:</span><span class="stat-val" id="s-mode">OBJECT</span></div>
+  <div class="stat"><span>Sub:</span><span class="stat-val" id="s-submode">-</span></div>
+  <div class="stat"><span>Tool:</span><span class="stat-val" id="s-tool">SELECT</span></div>
+  <div class="stat"><span>Objects:</span><span class="stat-val" id="s-obj">0</span></div>
+  <div class="stat"><span>Selected:</span><span class="stat-val" id="s-sel">-</span></div>
+  <div class="stat"><span>Verts:</span><span class="stat-val" id="s-verts">0</span></div>
+  <div class="stat"><span>Edges:</span><span class="stat-val" id="s-edges">0</span></div>
+  <div class="stat"><span>Faces:</span><span class="stat-val" id="s-faces">0</span></div>
+  <div class="stat"><span>Tris:</span><span class="stat-val" id="s-tris">0</span></div>
+  <div class="stat" id="s-editsel-wrap" style="display:none"><span id="s-editsel-label">Selected:</span><span class="stat-val" id="s-editsel">0</span></div>
+  <div class="stat" style="margin-left:auto"><span>Mouse:</span><span class="stat-val" id="s-mouse">0, 0</span></div>
+</div>
+
+<div id="ctx-menu">
+  <div class="ctx-label">Object</div>
+  <div class="ctx-item" onclick="addMesh('cube');
+setSculptBrush('draw'); // init sculpt UI
+// Show mobile hints
+if('ontouchstart' in window){
+  const h=document.getElementById('sculpt-touch-hint');
+  if(h) h.style.display='block';
+}hideMenu()">Add Cube</div>
+  <div class="ctx-item" onclick="addMesh('sphere');hideMenu()">Add Sphere</div>
+  <div class="ctx-item" onclick="addMesh('cylinder');hideMenu()">Add Cylinder</div>
+  <div class="ctx-item" onclick="addMesh('plane');hideMenu()">Add Plane</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-label">Selected</div>
+  <div class="ctx-item" onclick="duplicateSelected();hideMenu()">Duplicate</div>
+  <div class="ctx-item" onclick="deleteSelected();hideMenu()">Sil</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item" onclick="exportOBJ();hideMenu()">OBJ Export</div>
+  <div class="ctx-item" onclick="document.getElementById('importFile').click();hideMenu()">OBJ Import</div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ========== MATH UTILS ==========
+const V3=(x,y,z)=>({x,y,z});
+const v3add=(a,b)=>V3(a.x+b.x,a.y+b.y,a.z+b.z);
+const v3sub=(a,b)=>V3(a.x-b.x,a.y-b.y,a.z-b.z);
+const v3mul=(a,s)=>V3(a.x*s,a.y*s,a.z*s);
+const v3dot=(a,b)=>a.x*b.x+a.y*b.y+a.z*b.z;
+const v3cross=(a,b)=>V3(a.y*b.z-a.z*b.y,a.z*b.x-a.x*b.z,a.x*b.y-a.y*b.x);
+const v3len=(a)=>Math.sqrt(v3dot(a,a));
+const v3norm=(a)=>{const l=v3len(a)||1;return V3(a.x/l,a.y/l,a.z/l)};
+const v3lerp=(a,b,t)=>V3(a.x+(b.x-a.x)*t,a.y+(b.y-a.y)*t,a.z+(b.z-a.z)*t);
+
+function mat4identity(){return[1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1];}
+function mat4mul(a,b){
+  const r=new Array(16).fill(0);
+  for(let i=0;i<4;i++)for(let j=0;j<4;j++)for(let k=0;k<4;k++)r[i*4+j]+=a[i*4+k]*b[k*4+j];
+  return r;
+}
+function mat4transform(m,v){
+  const x=m[0]*v.x+m[1]*v.y+m[2]*v.z+m[3];
+  const y=m[4]*v.x+m[5]*v.y+m[6]*v.z+m[7];
+  const z=m[8]*v.x+m[9]*v.y+m[10]*v.z+m[11];
+  const w=m[12]*v.x+m[13]*v.y+m[14]*v.z+m[15];
+  return V3(x/w,y/w,z/w);
+}
+function mat4translate(tx,ty,tz){return[1,0,0,tx, 0,1,0,ty, 0,0,1,tz, 0,0,0,1];}
+function mat4scale(sx,sy,sz){return[sx,0,0,0, 0,sy,0,0, 0,0,sz,0, 0,0,0,1];}
+function mat4rotX(a){const c=Math.cos(a),s=Math.sin(a);return[1,0,0,0, 0,c,-s,0, 0,s,c,0, 0,0,0,1];}
+function mat4rotY(a){const c=Math.cos(a),s=Math.sin(a);return[c,0,s,0, 0,1,0,0, -s,0,c,0, 0,0,0,1];}
+function mat4rotZ(a){const c=Math.cos(a),s=Math.sin(a);return[c,-s,0,0, s,c,0,0, 0,0,1,0, 0,0,0,1];}
+
+// ========== STATE ==========
+let canvas, ctx;
+let quadView=false, activeQuad=3; // 0=top,1=front,2=right,3=persp
+let objects=[], selectedObj=null;
+let mode='object', subMode='vertex', tool='select';
+let cameras=[
+  {azimuth:0,      elevation:1.5699, distance:10, target:V3(0,0,0), label:'TOP',   ortho:true},
+  {azimuth:0,      elevation:0,      distance:10, target:V3(0,0,0), label:'FRONT', ortho:true},
+  {azimuth:1.5708, elevation:0,      distance:10, target:V3(0,0,0), label:'RIGHT', ortho:true},
+  {azimuth:0.6,    elevation:0.4,    distance:8,  target:V3(0,0,0), label:'PERSP', ortho:false},
+];
+let camera=cameras[3]; // active camera reference
+let wireframeMode=false, showGrid=true;
+let undoStack=[], redoStack=[];
+let editSelection=new Set(); // indices of selected verts/edges/faces
+let extrudeActive=false;
+let isDragging=false, lastMouse={x:0,y:0}, dragButton=0;
+// Modal transform (Blender style)
+let gizmo={active:false,type:null,axis:null,startMouse:{x:0,y:0},startState:null,snapBase:null};
+let lassoPoints=[], lassoActive=false;
+// Symmetry: mirror edits across an axis, pivot = 3D cursor position
+let symmetry={x:false,y:false,z:false};
+let cursor3D=V3(0,0,0); // 3D cursor — set by Shift+RMB in viewport
+let transformStart=null, transformAxis=null;
+let mousePos={x:0,y:0};
+let objColors=['#a0a0a8','#c87d5a','#7ab87a','#c4a45a','#9a82b8','#5ab8a8','#b87a5a'];
+let nextColor=0;
+
+// ========== MESH GENERATORS ==========
+function genCube(size=1){
+  const h=size/2;
+  const verts=[
+    V3(-h,-h,-h),V3(h,-h,-h),V3(h,h,-h),V3(-h,h,-h),
+    V3(-h,-h,h),V3(h,-h,h),V3(h,h,h),V3(-h,h,h)
+  ];
+  const faces=[[0,1,2,3],[4,7,6,5],[0,4,5,1],[2,6,7,3],[0,3,7,4],[1,5,6,2]];
+  const edges=[];
+  [[0,1],[1,2],[2,3],[3,0],[4,5],[5,6],[6,7],[7,4],[0,4],[1,5],[2,6],[3,7]].forEach(e=>edges.push(e));
+  return {verts,faces,edges};
+}
+function genPlane(size=2,segs=1){
+  const h=size/2, step=size/segs;
+  const verts=[], faces=[], edges=[];
+  for(let i=0;i<=segs;i++)for(let j=0;j<=segs;j++){
+    verts.push(V3(-h+j*step,0,-h+i*step));
+  }
+  const w=segs+1;
+  for(let i=0;i<segs;i++)for(let j=0;j<segs;j++){
+    const a=i*w+j,b=i*w+j+1,c=(i+1)*w+j+1,d=(i+1)*w+j;
+    faces.push([a,b,c,d]);
+    if(j===0)edges.push([a,d]);
+    edges.push([a,b]);
+    if(i===segs-1)edges.push([d,c]);
+    edges.push([b,c]);
+  }
+  return {verts,faces,edges};
+}
+function genSphere(r=1,segs=12,rings=8){
+  const verts=[],faces=[],edges=[];
+  for(let i=0;i<=rings;i++){
+    const phi=Math.PI*i/rings;
+    for(let j=0;j<=segs;j++){
+      const theta=2*Math.PI*j/segs;
+      verts.push(V3(r*Math.sin(phi)*Math.cos(theta),r*Math.cos(phi),r*Math.sin(phi)*Math.sin(theta)));
+    }
+  }
+  const w=segs+1;
+  for(let i=0;i<rings;i++)for(let j=0;j<segs;j++){
+    const a=i*w+j,b=i*w+j+1,c=(i+1)*w+j+1,d=(i+1)*w+j;
+    if(i===0)faces.push([a,b,c]);
+    else if(i===rings-1)faces.push([a,b,d]);
+    else faces.push([a,b,c,d]);
+    edges.push([a,b]);
+    if(j===segs-1)edges.push([b,c]);
+    edges.push([a,d]);
+  }
+  return {verts,faces,edges};
+}
+function genCylinder(r=0.5,h=2,segs=12){
+  const verts=[],faces=[],edges=[];
+  // bottom cap center, top cap center
+  verts.push(V3(0,-h/2,0));
+  verts.push(V3(0,h/2,0));
+  // bottom ring
+  for(let i=0;i<segs;i++)verts.push(V3(r*Math.cos(2*Math.PI*i/segs),-h/2,r*Math.sin(2*Math.PI*i/segs)));
+  // top ring
+  for(let i=0;i<segs;i++)verts.push(V3(r*Math.cos(2*Math.PI*i/segs),h/2,r*Math.sin(2*Math.PI*i/segs)));
+  // side faces
+  for(let i=0;i<segs;i++){
+    const a=2+i,b=2+(i+1)%segs,c=2+segs+(i+1)%segs,d=2+segs+i;
+    faces.push([a,b,c,d]);
+    edges.push([a,b]);
+    edges.push([a,d]);
+    edges.push([d,c]);
+  }
+  // bottom cap
+  const bf=[];for(let i=0;i<segs;i++){bf.push(2+i);if(i>0)edges.push([2+i,0]);}
+  edges.push([2,0]);
+  faces.push(bf.slice().reverse());
+  // top cap
+  const tf=[];for(let i=0;i<segs;i++){tf.push(2+segs+i);if(i>0)edges.push([2+segs+i,1]);}
+  edges.push([2+segs,1]);
+  faces.push(tf);
+  return {verts,faces,edges};
+}
+function genTorus(R=1,r=0.35,segs=16,sides=8){
+  const verts=[],faces=[],edges=[];
+  for(let i=0;i<segs;i++){
+    const phi=2*Math.PI*i/segs;
+    for(let j=0;j<sides;j++){
+      const theta=2*Math.PI*j/sides;
+      const x=(R+r*Math.cos(theta))*Math.cos(phi);
+      const y=r*Math.sin(theta);
+      const z=(R+r*Math.cos(theta))*Math.sin(phi);
+      verts.push(V3(x,y,z));
+    }
+  }
+  for(let i=0;i<segs;i++)for(let j=0;j<sides;j++){
+    const a=i*sides+j,b=i*sides+(j+1)%sides,c=((i+1)%segs)*sides+(j+1)%sides,d=((i+1)%segs)*sides+j;
+    faces.push([a,b,c,d]);
+    edges.push([a,b]);
+    edges.push([a,d]);
+  }
+  return {verts,faces,edges};
+}
+function genCone(r=0.7,h=2,segs=12){
+  const verts=[],faces=[],edges=[];
+  verts.push(V3(0,h/2,0)); // apex
+  verts.push(V3(0,-h/2,0)); // base center
+  for(let i=0;i<segs;i++)verts.push(V3(r*Math.cos(2*Math.PI*i/segs),-h/2,r*Math.sin(2*Math.PI*i/segs)));
+  // side faces
+  for(let i=0;i<segs;i++){
+    const a=2+i,b=2+(i+1)%segs;
+    faces.push([0,b,a]);
+    edges.push([0,a]);
+    edges.push([a,b]);
+  }
+  // base
+  const bf=[];
+  for(let i=0;i<segs;i++){bf.push(2+i);edges.push([2+i,1]);}
+  faces.push(bf.slice().reverse());
+  return {verts,faces,edges};
+}
+
+function rebuildEdges(obj){
+  const edgeSet=new Set();
+  obj.faces.forEach(f=>{
+    for(let i=0;i<f.length;i++){
+      const a=f[i],b=f[(i+1)%f.length];
+      const key=Math.min(a,b)+','+Math.max(a,b);
+      edgeSet.add(key);
+    }
+  });
+  obj.edges=[...edgeSet].map(k=>k.split(',').map(Number));
+}
+
+// ========== ADD MESH ==========
+function addMesh(type){
+  pushUndo();
+  let mesh;
+  if(type==='cube')mesh=genCube(1.5);
+  else if(type==='sphere')mesh=genSphere(1,12,8);
+  else if(type==='cylinder')mesh=genCylinder(0.7,2,12);
+  else if(type==='plane')mesh=genPlane(2,2);
+  else if(type==='torus')mesh=genTorus(1,0.35,16,8);
+  else if(type==='cone')mesh=genCone(0.7,2,12);
+  const color=objColors[nextColor%objColors.length]; nextColor++;
+  const obj={
+    id:Date.now()+Math.random(),
+    name:type.charAt(0).toUpperCase()+type.slice(1),
+    type,
+    color,
+    position:V3(0,0,0),
+    rotation:V3(0,0,0),
+    scale:V3(1,1,1),
+    verts:mesh.verts,
+    faces:mesh.faces,
+    edges:mesh.edges,
+    visible:true
+  };
+  objects.push(obj);
+  selectObject(obj);
+  toast('New '+obj.name+' added');
+  render();
+  updateObjList();
+}
+
+// ========== SELECTION ==========
+function selectObject(obj){
+  selectedObj=obj;
+  editSelection.clear();
+  updateTransformPanel();
+  updateObjList();
+  updateStatus();
+  render();
+}
+
+function updateObjList(){
+  const list=document.getElementById('obj-list');
+  list.innerHTML=objects.map(o=>`
+    <div class="obj-item ${o===selectedObj?'selected':''}" onclick="selectObject(objects.find(x=>x.id==${o.id}))">
+      <div class="obj-dot" style="background:${o.color}"></div>
+      ${o.name}
+    </div>
+  `).join('');
+}
+
+// ========== TRANSFORM PANEL ==========
+function updateTransformPanel(){
+  if(!selectedObj){
+    ['tx','ty','tz','rx','ry','rz','sx','sy','sz'].forEach(id=>document.getElementById(id).value='');
+    return;
+  }
+  const o=selectedObj;
+  document.getElementById('tx').value=o.position.x.toFixed(3);
+  document.getElementById('ty').value=o.position.y.toFixed(3);
+  document.getElementById('tz').value=o.position.z.toFixed(3);
+  document.getElementById('rx').value=(o.rotation.x*180/Math.PI).toFixed(1);
+  document.getElementById('ry').value=(o.rotation.y*180/Math.PI).toFixed(1);
+  document.getElementById('rz').value=(o.rotation.z*180/Math.PI).toFixed(1);
+  document.getElementById('sx').value=o.scale.x.toFixed(3);
+  document.getElementById('sy').value=o.scale.y.toFixed(3);
+  document.getElementById('sz').value=o.scale.z.toFixed(3);
+}
+
+function applyTransform(){
+  if(!selectedObj)return;
+  pushUndo();
+  const o=selectedObj;
+  o.position.x=parseFloat(document.getElementById('tx').value)||0;
+  o.position.y=parseFloat(document.getElementById('ty').value)||0;
+  o.position.z=parseFloat(document.getElementById('tz').value)||0;
+  o.rotation.x=(parseFloat(document.getElementById('rx').value)||0)*Math.PI/180;
+  o.rotation.y=(parseFloat(document.getElementById('ry').value)||0)*Math.PI/180;
+  o.rotation.z=(parseFloat(document.getElementById('rz').value)||0)*Math.PI/180;
+  o.scale.x=parseFloat(document.getElementById('sx').value)||1;
+  o.scale.y=parseFloat(document.getElementById('sy').value)||1;
+  o.scale.z=parseFloat(document.getElementById('sz').value)||1;
+  render();
+}
+
+// ========== PROJECTION ==========
+function getObjectMatrix(obj){
+  let m=mat4identity();
+  m=mat4mul(mat4translate(obj.position.x,obj.position.y,obj.position.z),m);
+  m=mat4mul(m,mat4rotX(obj.rotation.x));
+  m=mat4mul(m,mat4rotY(obj.rotation.y));
+  m=mat4mul(m,mat4rotZ(obj.rotation.z));
+  m=mat4mul(m,mat4scale(obj.scale.x,obj.scale.y,obj.scale.z));
+  return m;
+}
+
+function getViewMatrix(){
+  const {azimuth,elevation,distance,target}=camera;
+  const camX=target.x+distance*Math.cos(elevation)*Math.sin(azimuth);
+  const camY=target.y+distance*Math.sin(elevation);
+  const camZ=target.z+distance*Math.cos(elevation)*Math.cos(azimuth);
+  const cam=V3(camX,camY,camZ);
+  const forward=v3norm(v3sub(target,cam));
+  const up=V3(0,1,0);
+  const right=v3norm(v3cross(forward,up));
+  const actualUp=v3cross(right,forward);
+  return {cam,forward,right,up:actualUp};
+}
+
+function project(v3d,W,H){
+  const {cam,forward,right,up}=getViewMatrix();
+  const rel=v3sub(v3d,cam);
+  const fov=Math.PI/3;
+  const near=0.1,far=200;
+  const zc=v3dot(rel,forward);
+  if(zc<near||zc>far)return null;
+  const xc=v3dot(rel,right);
+  const yc=v3dot(rel,up);
+  const scale=(H/2)/Math.tan(fov/2);
+  return {
+    x:W/2+xc/zc*scale,
+    y:H/2-yc/zc*scale,
+    z:zc
+  };
+}
+
+// ========== RENDER ==========
+function renderViewport(vx,vy,vw,vh,camIdx,isActive){
+  const cam=cameras[camIdx];
+  // Clip to viewport
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(vx,vy,vw,vh);
+  ctx.clip();
+
+  // Background
+  ctx.fillStyle='#1c1c1e';
+  ctx.fillRect(vx,vy,vw,vh);
+
+  // Grid
+  if(showGrid) drawGridInViewport(vx,vy,vw,vh,cam);
+
+  // Sort objects
+  const tmpCam=camera;
+  camera=cam;
+  const sortedObjs=[...objects].sort((a,b)=>{
+    const {cam:cv}=getViewMatrix();
+    return v3len(v3sub(b.position,cv))-v3len(v3sub(a.position,cv));
+  });
+  for(const obj of sortedObjs) drawObjectInViewport(obj,vx,vy,vw,vh,cam);
+  drawAxesInViewport(vx,vy,vw,vh,cam);
+  camera=tmpCam;
+
+  // Viewport label
+  ctx.fillStyle=isActive?'rgba(255,107,53,0.9)':'rgba(100,100,110,0.7)';
+  ctx.font='600 10px Inter,sans-serif';
+  ctx.fillText(cam.label, vx+8, vy+16);
+
+  // Active border
+  if(isActive){
+    ctx.strokeStyle='rgba(255,107,53,0.6)';
+    ctx.lineWidth=2;
+    ctx.strokeRect(vx+1,vy+1,vw-2,vh-2);
+  }
+
+  ctx.restore();
+}
+
+let _renderPending=false;
+function render(){
+  if(_renderPending) return;
+  _renderPending=true;
+  requestAnimationFrame(()=>{
+    _renderPending=false;
+    _renderImmediate();
+  });
+}
+function _renderImmediate(){
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+
+  if(!quadView){
+    // Single viewport
+    ctx.fillStyle='#1c1c1e';
+    ctx.fillRect(0,0,W,H);
+    if(showGrid) drawGrid(W,H);
+    const sortedObjs=[...objects].sort((a,b)=>{
+      const {cam}=getViewMatrix();
+      return v3len(v3sub(b.position,cam))-v3len(v3sub(a.position,cam));
+    });
+    for(const obj of sortedObjs) drawObject(obj,W,H);
+    drawAxes(W,H);
+  } else {
+    // Quad view — 4 equal panels
+    const hw=Math.floor(W/2), hh=Math.floor(H/2);
+    const quads=[
+      {x:0,   y:0,   w:hw,   h:hh,   ci:0}, // TL: Top
+      {x:hw+1,y:0,   w:W-hw-1,h:hh,  ci:1}, // TR: Front
+      {x:0,   y:hh+1,w:hw,   h:H-hh-1,ci:2}, // BL: Right
+      {x:hw+1,y:hh+1,w:W-hw-1,h:H-hh-1,ci:3}, // BR: Persp
+    ];
+    quads.forEach(q=>renderViewport(q.x,q.y,q.w,q.h,q.ci,q.ci===activeQuad));
+    // Divider lines
+    ctx.fillStyle='#000';
+    ctx.fillRect(hw,0,1,H);
+    ctx.fillRect(0,hh,W,1);
+  }
+
+  // Gizmo HUD (always on top)
+  if(gizmo.active){
+    const aColors={x:'#ff453a',y:'#32d74b',z:'#4da3ff',null:'#f2f2f7'};
+    const aNames={x:'X',y:'Y',z:'Z',null:'Free'};
+    const tNames={move:'Move',rotate:'Rotate',scale:'Scale'};
+    const col=aColors[gizmo.axis]||'#f2f2f7';
+    ctx.save();
+    ctx.fillStyle='rgba(28,28,30,0.88)';
+    ctx.beginPath();ctx.roundRect(10,H-38,270,26,6);ctx.fill();
+    ctx.fillStyle=col;
+    ctx.font='600 11px Inter,sans-serif';
+    ctx.fillText((tNames[gizmo.type]||'')+'  Axis: '+(aNames[gizmo.axis]||'Free'), 18, H-20);
+    ctx.fillStyle='#6c6c70';
+    ctx.font='10px Inter,sans-serif';
+    ctx.fillText('Enter/Click: Confirm   ESC: Cancel   X/Y/Z: Axis', 18, H-8);
+    ctx.restore();
+  }
+  updateStatus();
+}
+
+// ========== QUAD VIEW HELPERS ==========
+function toggleQuad(){
+  quadView=!quadView;
+  camera=cameras[quadView?activeQuad:3];
+  document.getElementById('btn-quad').classList.toggle('btn-quad-active',quadView);
+  resize();
+}
+
+function getQuadAt(mx,my){
+  const W=canvas.width,H=canvas.height;
+  const hw=Math.floor(W/2),hh=Math.floor(H/2);
+  const col=mx<hw?0:1, row=my<hh?0:1;
+  return row*2+col; // 0=TL,1=TR,2=BL,3=BR
+}
+
+function getViewportRect(qi){
+  const W=canvas.width,H=canvas.height;
+  const hw=Math.floor(W/2),hh=Math.floor(H/2);
+  const quads=[
+    {x:0,   y:0,   w:hw,     h:hh},
+    {x:hw+1,y:0,   w:W-hw-1, h:hh},
+    {x:0,   y:hh+1,w:hw,     h:H-hh-1},
+    {x:hw+1,y:hh+1,w:W-hw-1, h:H-hh-1},
+  ];
+  return quads[qi];
+}
+
+// Local mouse coords within a quad viewport
+function toLocalMouse(mx,my,qi){
+  if(!quadView) return {x:mx,y:my};
+  const r=getViewportRect(qi);
+  return {x:mx-r.x,y:my-r.y};
+}
+
+// Viewport-clipped versions of draw functions
+function drawGridInViewport(vx,vy,vw,vh,cam){
+  const tmpCam=camera; camera=cam;
+  const W=vw,H=vh;
+  const size=10;
+  ctx.strokeStyle='rgba(80,80,86,0.35)';
+  ctx.lineWidth=0.5;
+  for(let i=-size;i<=size;i++){
+    const p1=projectIn(V3(i,0,-size),vx,vy,vw,vh,cam);
+    const p2=projectIn(V3(i,0,size),vx,vy,vw,vh,cam);
+    if(p1&&p2){ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();}
+    const q1=projectIn(V3(-size,0,i),vx,vy,vw,vh,cam);
+    const q2=projectIn(V3(size,0,i),vx,vy,vw,vh,cam);
+    if(q1&&q2){ctx.beginPath();ctx.moveTo(q1.x,q1.y);ctx.lineTo(q2.x,q2.y);ctx.stroke();}
+  }
+  ctx.strokeStyle='rgba(110,110,118,0.55)';
+  ctx.lineWidth=1;
+  const cx1=projectIn(V3(-size,0,0),vx,vy,vw,vh,cam),cx2=projectIn(V3(size,0,0),vx,vy,vw,vh,cam);
+  if(cx1&&cx2){ctx.beginPath();ctx.moveTo(cx1.x,cx1.y);ctx.lineTo(cx2.x,cx2.y);ctx.stroke();}
+  const cz1=projectIn(V3(0,0,-size),vx,vy,vw,vh,cam),cz2=projectIn(V3(0,0,size),vx,vy,vw,vh,cam);
+  if(cz1&&cz2){ctx.beginPath();ctx.moveTo(cz1.x,cz1.y);ctx.lineTo(cz2.x,cz2.y);ctx.stroke();}
+  camera=tmpCam;
+}
+
+function projectIn(v3d,vx,vy,vw,vh,cam){
+  const camX=cam.target.x+cam.distance*Math.cos(cam.elevation)*Math.sin(cam.azimuth);
+  const camY=cam.target.y+cam.distance*Math.sin(cam.elevation);
+  const camZ=cam.target.z+cam.distance*Math.cos(cam.elevation)*Math.cos(cam.azimuth);
+  const camPos=V3(camX,camY,camZ);
+  const forward=v3norm(v3sub(cam.target,camPos));
+  const up=V3(0,1,0);
+  const right=v3norm(v3cross(forward,up));
+  const actualUp=v3cross(right,forward);
+  const rel=v3sub(v3d,camPos);
+  const near=0.1,far=200;
+  const zc=v3dot(rel,forward);
+  if(zc<near||zc>far)return null;
+  const xc=v3dot(rel,right);
+  const yc=v3dot(rel,actualUp);
+  let px,py;
+  if(cam.ortho){
+    const scale=Math.min(vw,vh)/(cam.distance*1.2);
+    px=vx+vw/2+xc*scale;
+    py=vy+vh/2-yc*scale;
+  } else {
+    const fov=Math.PI/3;
+    const scale=(vh/2)/Math.tan(fov/2);
+    px=vx+vw/2+xc/zc*scale;
+    py=vy+vh/2-yc/zc*scale;
+  }
+  return {x:px,y:py,z:zc};
+}
+
+function drawObjectInViewport(obj,vx,vy,vw,vh,cam){
+  const tmpCam=camera; camera=cam;
+  drawObjectCore(obj,
+    v=>projectIn(v,vx,vy,vw,vh,cam),
+    vw,vh,vx,vy
+  );
+  camera=tmpCam;
+}
+
+function drawAxesInViewport(vx,vy,vw,vh,cam){
+  const len=0.5;
+  const o=projectIn(V3(0,0,0),vx,vy,vw,vh,cam);
+  if(!o)return;
+  [{v:V3(len,0,0),c:'#ff453a',l:'X'},{v:V3(0,len,0),c:'#32d74b',l:'Y'},{v:V3(0,0,len),c:'#4da3ff',l:'Z'}]
+    .forEach(ax=>{
+      const p=projectIn(ax.v,vx,vy,vw,vh,cam);
+      if(!p)return;
+      ctx.strokeStyle=ax.c;ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(p.x,p.y);ctx.stroke();
+      ctx.fillStyle=ax.c;ctx.font='10px monospace';
+      ctx.fillText(ax.l,p.x+3,p.y+3);
+    });
+}
+
+function drawGrid(W,H){
+  const size=10, step=1;
+  ctx.strokeStyle='rgba(80,80,86,0.35)';
+  ctx.lineWidth=0.5;
+  for(let i=-size;i<=size;i++){
+    const p1=project(V3(i,0,-size),W,H);
+    const p2=project(V3(i,0,size),W,H);
+    if(p1&&p2){ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();}
+    const q1=project(V3(-size,0,i),W,H);
+    const q2=project(V3(size,0,i),W,H);
+    if(q1&&q2){ctx.beginPath();ctx.moveTo(q1.x,q1.y);ctx.lineTo(q2.x,q2.y);ctx.stroke();}
+  }
+  // center lines
+  ctx.strokeStyle='rgba(110,110,118,0.55)';
+  ctx.lineWidth=1;
+  const cx1=project(V3(-size,0,0),W,H),cx2=project(V3(size,0,0),W,H);
+  if(cx1&&cx2){ctx.beginPath();ctx.moveTo(cx1.x,cx1.y);ctx.lineTo(cx2.x,cx2.y);ctx.stroke();}
+  const cz1=project(V3(0,0,-size),W,H),cz2=project(V3(0,0,size),W,H);
+  if(cz1&&cz2){ctx.beginPath();ctx.moveTo(cz1.x,cz1.y);ctx.lineTo(cz2.x,cz2.y);ctx.stroke();}
+}
+
+function drawAxes(W,H){
+  const len=0.5;
+  const axes=[{v:V3(len,0,0),c:'#e94560',l:'X'},{v:V3(0,len,0),c:'#2dbd6e',l:'Y'},{v:V3(0,0,len),c:'#3a7bd5',l:'Z'}];
+  const o=project(V3(0,0,0),W,H);
+  if(!o)return;
+  axes.forEach(ax=>{
+    const p=project(ax.v,W,H);
+    if(!p)return;
+    ctx.strokeStyle=ax.c; ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(o.x,o.y);ctx.lineTo(p.x,p.y);ctx.stroke();
+    ctx.fillStyle=ax.c;ctx.font='10px monospace';
+    ctx.fillText(ax.l,p.x+3,p.y+3);
+  });
+}
+
+function getFaceNormal(verts,face,worldVerts){
+  if(face.length<3)return V3(0,0,1);
+  const v0=worldVerts[face[0]],v1=worldVerts[face[1]],v2=worldVerts[face[2]];
+  const n=v3norm(v3cross(v3sub(v2,v0),v3sub(v1,v0)));
+  const faceCenter=face.reduce((s,i)=>v3add(s,worldVerts[i]),V3(0,0,0));
+  const fc=v3mul(faceCenter,1/face.length);
+  const meshCenter=worldVerts.reduce((s,v)=>v3add(s,v),V3(0,0,0));
+  const mc=v3mul(meshCenter,1/Math.max(1,worldVerts.length));
+  return v3dot(n,v3sub(fc,mc))<0?v3mul(n,-1):n;
+}
+
+function drawObject(obj,W,H){
+  drawObjectCore(obj, v=>{
+    const p=projectIn(v,0,0,W,H,camera);
+    return p;
+  }, W, H, 0, 0);
+}
+
+function drawObjectCore(obj, projectFn, W, H, ox, oy){
+  const mObj=getObjectMatrix(obj);
+  const {cam}=getViewMatrix();
+  const isSelected=obj===selectedObj;
+  const isEdit=mode==='edit'&&isSelected;
+  const highPoly=obj.verts.length>1500;
+
+  // Cache world + projected verts
+  const worldVerts=new Array(obj.verts.length);
+  for(let i=0;i<obj.verts.length;i++) worldVerts[i]=mat4transform(mObj,obj.verts[i]);
+  const projVerts=new Array(obj.verts.length);
+  for(let i=0;i<obj.verts.length;i++) projVerts[i]=projectFn(worldVerts[i]);
+
+  // Parse color once
+  const hex=obj.color.replace('#','');
+  const cr=parseInt(hex.slice(0,2),16),cg=parseInt(hex.slice(2,4),16),cb=parseInt(hex.slice(4,6),16);
+  const alpha=(isEdit?0.7:0.85);
+
+  // Build face data — precompute normals & depth
+  const faceData=new Array(obj.faces.length);
+  for(let fi=0;fi<obj.faces.length;fi++){
+    const face=obj.faces[fi];
+    // Fast centroid & normal
+    let cx=0,cy=0,cz=0;
+    for(let k=0;k<face.length;k++){const wv=worldVerts[face[k]];cx+=wv.x;cy+=wv.y;cz+=wv.z;}
+    const inv=1/face.length;
+    cx*=inv;cy*=inv;cz*=inv;
+    const dist=(cx-cam.x)**2+(cy-cam.y)**2+(cz-cam.z)**2; // squared ok for sort
+
+    const v0=worldVerts[face[0]],v1=worldVerts[face[1]],v2=worldVerts[face[2]];
+    const ax=v1.x-v0.x,ay=v1.y-v0.y,az=v1.z-v0.z;
+    const bx=v2.x-v0.x,by=v2.y-v0.y,bz=v2.z-v0.z;
+    let nx=ay*bz-az*by, ny=az*bx-ax*bz, nz=ax*by-ay*bx;
+    const nl=Math.sqrt(nx*nx+ny*ny+nz*nz)||1;
+    nx/=nl;ny/=nl;nz/=nl;
+    // Dot with outward direction
+    const ox2=cx-cam.x,oy2=cy-cam.y,oz2=cz-cam.z;
+    const ol=Math.sqrt(ox2*ox2+oy2*oy2+oz2*oz2)||1;
+    let dot=-(nx*(ox2/ol)+ny*(oy2/ol)+nz*(oz2/ol));
+    faceData[fi]={fi,face,dist,dot};
+  }
+  // Depth sort
+  faceData.sort((a,b)=>b.dist-a.dist);
+
+  // Draw faces
+  const editFaceMode=isEdit&&subMode==='face';
+  for(let idx=0;idx<faceData.length;idx++){
+    const {face,dot,fi}=faceData[idx];
+    if(!wireframeMode&&dot<0&&!isEdit) continue; // back-face cull
+
+    const pts=[];
+    let allVisible=true;
+    for(let k=0;k<face.length;k++){
+      const p=projVerts[face[k]];
+      if(!p){allVisible=false;break;}
+      pts.push(p);
+    }
+    if(!allVisible||pts.length<3) continue;
+
+    if(!wireframeMode){
+      const light=Math.max(0,dot);
+      const intensity=0.2+0.7*light;
+      const ir=Math.min(255,cr*intensity|0);
+      const ig=Math.min(255,cg*intensity|0);
+      const ib=Math.min(255,cb*intensity|0);
+      const faceSelected=editFaceMode&&editSelection.has(fi);
+      ctx.fillStyle=faceSelected?`rgba(255,150,0,0.85)`:`rgba(${ir},${ig},${ib},${alpha})`;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x,pts[0].y);
+      for(let k=1;k<pts.length;k++) ctx.lineTo(pts[k].x,pts[k].y);
+      ctx.closePath();
+      ctx.fill();
+    }
+
+    // Edges — skip wireframe lines for highpoly non-selected
+    if(!highPoly||isEdit||wireframeMode){
+      ctx.strokeStyle=isSelected?'rgba(255,255,255,0.18)':'rgba(0,0,0,0.28)';
+      ctx.lineWidth=wireframeMode?0.8:0.4;
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x,pts[0].y);
+      for(let k=1;k<pts.length;k++) ctx.lineTo(pts[k].x,pts[k].y);
+      ctx.closePath();
+      ctx.stroke();
+    }
+  }
+
+  // Edit mode overlays
+  if(isEdit){
+    const showAllEdges=!highPoly||subMode==='edge';
+    if(showAllEdges){
+      for(let ei=0;ei<obj.edges.length;ei++){
+        const edge=obj.edges[ei];
+        const p1=projVerts[edge[0]],p2=projVerts[edge[1]];
+        if(!p1||!p2) continue;
+        const isEdgeSel=subMode==='edge'&&editSelection.has(ei);
+        ctx.strokeStyle=isEdgeSel?'#ffa500':'rgba(150,200,255,0.5)';
+        ctx.lineWidth=isEdgeSel?3:1;
+        ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();
+      }
+    }
+    // Vertices — batch rects instead of arcs for performance
+    const showVerts=!highPoly||subMode==='vertex';
+    if(showVerts){
+      ctx.fillStyle='rgba(100,180,255,0.9)';
+      ctx.beginPath();
+      for(let vi=0;vi<obj.verts.length;vi++){
+        const p=projVerts[vi];
+        if(!p) continue;
+        const isVertSel=subMode==='vertex'&&editSelection.has(vi);
+        if(isVertSel){
+          ctx.fillStyle='#ffa500';
+          ctx.fillRect(p.x-3,p.y-3,6,6);
+          ctx.fillStyle='rgba(100,180,255,0.9)';
+        } else {
+          ctx.fillRect(p.x-2,p.y-2,4,4);
+        }
+      }
+    }
+  }
+
+  // Object mode selection outline — skip for highpoly
+  if(isSelected&&mode==='object'&&!highPoly){
+    ctx.strokeStyle=obj.color;
+    ctx.lineWidth=1.5;
+    for(let ei=0;ei<obj.edges.length;ei++){
+      const edge=obj.edges[ei];
+      const p1=projVerts[edge[0]],p2=projVerts[edge[1]];
+      if(!p1||!p2) continue;
+      ctx.beginPath();ctx.moveTo(p1.x,p1.y);ctx.lineTo(p2.x,p2.y);ctx.stroke();
+    }
+  } else if(isSelected&&mode==='object'&&highPoly){
+    // For highpoly just draw bounding box outline
+    let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+    projVerts.forEach(p=>{if(!p)return;if(p.x<minX)minX=p.x;if(p.y<minY)minY=p.y;if(p.x>maxX)maxX=p.x;if(p.y>maxY)maxY=p.y;});
+    if(maxX>minX){
+      ctx.strokeStyle=obj.color;ctx.lineWidth=2;
+      ctx.strokeRect(minX,minY,maxX-minX,maxY-minY);
+    }
+  }
+}
+
+
+// ========== MODE / TOOL ==========
+function setMode(m){
+  mode=m;
+  editSelection.clear();
+  document.getElementById('btn-object').classList.toggle('active',m==='object');
+  document.getElementById('btn-edit').classList.toggle('active',m==='edit');
+  document.getElementById('btn-sculpt').classList.toggle('active',m==='sculpt');
+  ['btn-vert','btn-edge','btn-face'].forEach(id=>document.getElementById(id).style.display=m==='edit'?'inline-flex':'none');
+  document.getElementById('editpanel').style.display=m==='edit'?'':'none';
+  document.getElementById('sculptpanel').style.display=m==='sculpt'?'':'none';
+  document.getElementById('s-mode').textContent=m.toUpperCase();
+  if(m==='sculpt') canvas.style.cursor='none';
+  else canvas.style.cursor='default';
+  render();
+}
+
+function setSubMode(sm){
+  subMode=sm;
+  editSelection.clear();
+  document.getElementById('btn-vert').classList.toggle('active',sm==='vertex');
+  document.getElementById('btn-edge').classList.toggle('active',sm==='edge');
+  document.getElementById('btn-face').classList.toggle('active',sm==='face');
+  document.getElementById('s-submode').textContent=sm.toUpperCase();
+  render();
+}
+
+function setTool(t){
+  tool=t;
+  document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+  const el=document.getElementById('tool-'+t);
+  if(el)el.classList.add('active');
+  document.getElementById('s-tool').textContent=t.toUpperCase();
+  canvas.style.cursor=t==='select'?'default':t==='extrude'?'crosshair':t==='merge'?'cell':'move';
+}
+
+// ========== PICKING ==========
+function getActiveViewSize(){
+  if(!quadView)return{w:canvas.width,h:canvas.height};
+  const r=getViewportRect(activeQuad);
+  return{w:r.w,h:r.h};
+}
+
+function getActiveViewport(){
+  if(!quadView){
+    return{vx:0,vy:0,vw:canvas.width,vh:canvas.height,cam:camera};
+  }
+  const r=getViewportRect(activeQuad);
+  return{vx:r.x,vy:r.y,vw:r.w,vh:r.h,cam:cameras[activeQuad]};
+}
+
+function projectPick(v3d,vx,vy,vw,vh,cam,mx,my){
+  // Returns absolute canvas coords
+  return projectIn(v3d,vx,vy,vw,vh,cam);
+}
+
+function pickObject(mx,my){
+  // mx,my are local to active viewport — projectPick maps 3D to those local coords
+  const {vx,vy,vw,vh,cam}=getActiveViewport();
+  const projFn=v=>projectPick(v,vx,vy,vw,vh,cam,mx,my);
+  let best=null, bestZ=Infinity;
+  for(const obj of objects){
+    const mObj=getObjectMatrix(obj);
+    const worldVerts=obj.verts.map(v=>mat4transform(mObj,v));
+    const projVerts=worldVerts.map(v=>projectPick(v,vx,vy,vw,vh,cam,0,0));
+    for(const face of obj.faces){
+      const pts=face.map(i=>projVerts[i]).filter(p=>p);
+      if(pts.length<3)continue;
+      // offset pts to local space
+      const localPts=pts.map(p=>({x:p.x-vx,y:p.y-vy,z:p.z}));
+      if(pointInPoly(mx,my,localPts)){
+        const avgZ=localPts.reduce((s,p)=>s+p.z,0)/localPts.length;
+        if(avgZ<bestZ){bestZ=avgZ;best=obj;}
+      }
+    }
+  }
+  return best;
+}
+
+function pointInPoly(px,py,pts){
+  let inside=false;
+  for(let i=0,j=pts.length-1;i<pts.length;j=i++){
+    const xi=pts[i].x,yi=pts[i].y,xj=pts[j].x,yj=pts[j].y;
+    if(((yi>py)!==(yj>py))&&(px<(xj-xi)*(py-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
+}
+
+function pickEditElement(mx,my){
+  if(!selectedObj)return;
+  const {vx,vy,vw,vh,cam}=getActiveViewport();
+  const mObj=getObjectMatrix(selectedObj);
+  const worldVerts=selectedObj.verts.map(v=>mat4transform(mObj,v));
+  // Project to absolute canvas coords, then convert to local
+  const projVerts=worldVerts.map(v=>{
+    const p=projectIn(v,vx,vy,vw,vh,cam);
+    if(!p)return null;
+    return{x:p.x-vx,y:p.y-vy,z:p.z};
+  });
+
+  if(subMode==='vertex'){
+    let best=-1,bestD=12;
+    projVerts.forEach((p,i)=>{
+      if(!p)return;
+      const d=Math.sqrt((p.x-mx)**2+(p.y-my)**2);
+      if(d<bestD){bestD=d;best=i;}
+    });
+    return best;
+  }
+  if(subMode==='edge'){
+    let best=-1,bestD=8;
+    selectedObj.edges.forEach((e,i)=>{
+      const p1=projVerts[e[0]],p2=projVerts[e[1]];
+      if(!p1||!p2)return;
+      const d=pointLineDistance(mx,my,p1.x,p1.y,p2.x,p2.y);
+      if(d<bestD){bestD=d;best=i;}
+    });
+    return best;
+  }
+  if(subMode==='face'){
+    let bestFi=-1, bestZ=Infinity;
+    selectedObj.faces.forEach((face,fi)=>{
+      const pts=face.map(i=>projVerts[i]).filter(p=>p);
+      if(pts.length<3)return;
+      if(!pointInPoly(mx,my,pts))return;
+      const avgZ=pts.reduce((s,p)=>s+p.z,0)/pts.length;
+      if(avgZ<bestZ){bestZ=avgZ;bestFi=fi;}
+    });
+    return bestFi;
+  }
+}
+
+function pointLineDistance(px,py,x1,y1,x2,y2){
+  const A=px-x1,B=py-y1,C=x2-x1,D=y2-y1;
+  const dot=A*C+B*D,lenSq=C*C+D*D;
+  let param=lenSq>0?dot/lenSq:-1;
+  param=Math.max(0,Math.min(1,param));
+  return Math.sqrt((px-(x1+param*C))**2+(py-(y1+param*D))**2);
+}
+
+// ========== MOUSE EVENTS ==========
+function initEvents(){
+canvas.addEventListener('mousedown',e=>{
+  e.preventDefault();
+  lastMouse={x:e.offsetX,y:e.offsetY};
+  isDragging=true;
+  dragButton=e.button;
+
+  if(e.button===0){
+    // Sculpt mode — handle before anything else
+    if(mode==='sculpt'){
+      pushUndoDebounced();
+      sculpt.painting=true;
+      // Get local viewport coords
+      const _slm=quadView?toLocalMouse(e.offsetX,e.offsetY,activeQuad):{x:e.offsetX,y:e.offsetY};
+      applySculptBrush(_slm.x,_slm.y);
+      render();
+      drawSculptCursor(e.offsetX,e.offsetY,canvas.width,canvas.height);
+      return;
+    }
+    // Confirm gizmo on left click (if active)
+    if(gizmo.active){confirmGizmo();return;}
+    if(mode==='object'){
+      if(tool==='select'){
+        const _lm0=quadView?toLocalMouse(e.offsetX,e.offsetY,activeQuad):{x:e.offsetX,y:e.offsetY};
+        const hit=pickObject(_lm0.x,_lm0.y);
+        selectObject(hit);
+      }
+    } else if(mode==='edit'){
+      if(tool==='lasso'){
+        const _lml=quadView?toLocalMouse(e.offsetX,e.offsetY,activeQuad):{x:e.offsetX,y:e.offsetY};
+        lassoPoints=[{x:_lml.x,y:_lml.y}];
+        lassoActive=true;
+      } else if(tool==='select'||tool==='move'){
+        const _lme=quadView?toLocalMouse(e.offsetX,e.offsetY,activeQuad):{x:e.offsetX,y:e.offsetY};
+        const idx=pickEditElement(_lme.x,_lme.y);
+        if(idx>=0){
+          if(e.altKey&&e.ctrlKey&&subMode==='edge'){
+            // Ctrl+Alt+Click: ring select
+            const ring=findEdgeRing(idx,selectedObj);
+            if(e.shiftKey){ring.forEach(i=>editSelection.add(i));}
+            else{editSelection.clear();ring.forEach(i=>editSelection.add(i));}
+          } else if(e.altKey){
+            // Alt+Click: loop select
+            const loop=findLoop(idx);
+            if(e.shiftKey){loop.forEach(i=>editSelection.add(i));}
+            else{editSelection.clear();loop.forEach(i=>editSelection.add(i));}
+          } else if(e.shiftKey){
+            if(editSelection.has(idx))editSelection.delete(idx);
+            else editSelection.add(idx);
+          } else {
+            editSelection.clear();
+            editSelection.add(idx);
+          }
+          render();
+        } else if(!e.shiftKey&&!e.altKey){
+          editSelection.clear();
+          render();
+        }
+      }
+    }
+  }
+});
+
+canvas.addEventListener('mousemove',e=>{
+  const _lmm=quadView?toLocalMouse(e.offsetX,e.offsetY,activeQuad):{x:e.offsetX,y:e.offsetY};
+  const dx=_lmm.x-lastMouse.x;
+  const dy=_lmm.y-lastMouse.y;
+  mousePos={x:e.offsetX,y:e.offsetY}; // always raw canvas coords for overlays
+  document.getElementById('s-mouse').textContent=`${e.offsetX}, ${e.offsetY}`;
+
+  if(lassoActive&&tool==='lasso'){
+    lassoPoints.push({x:_lmm.x,y:_lmm.y});
+    drawLasso();
+    lastMouse={x:e.offsetX,y:e.offsetY};
+    return;
+  }
+  if(gizmo.active){
+    updateGizmo(_lmm.x,_lmm.y);
+    lastMouse={x:_lmm.x,y:_lmm.y};
+    return;
+  }
+
+    if(mode==='sculpt'){
+    if(sculpt.painting){
+      applySculptBrush(_lmm.x,_lmm.y);
+    }
+    render();
+    drawSculptCursor(e.offsetX,e.offsetY,canvas.width,canvas.height);
+    lastMouse={x:_lmm.x,y:_lmm.y};
+    return;
+  }
+    if(!isDragging){lastMouse={x:e.offsetX,y:e.offsetY};return;}
+
+  if(dragButton===1||(dragButton===0&&e.altKey&&!e.shiftKey)){
+    // orbit
+    const acam=quadView?cameras[activeQuad]:camera;
+    acam.azimuth-=dx*0.008;
+    acam.elevation=Math.max(-1.5,Math.min(1.5,acam.elevation+dy*0.008));
+    if(quadView)camera=acam;
+    render();
+  } else if(dragButton===2||(dragButton===1&&e.shiftKey)||(dragButton===0&&e.altKey&&e.shiftKey)){
+    // pan
+    const acam2=quadView?cameras[activeQuad]:camera;
+    const tmpC=camera; camera=acam2;
+    const {right,up}=getViewMatrix();
+    camera=tmpC;
+    const speed=acam2.distance*0.003;
+    acam2.target=v3sub(acam2.target,v3mul(right,dx*speed));
+    acam2.target=v3add(acam2.target,v3mul(up,dy*speed));
+    if(quadView)camera=acam2;
+    render();
+  } else if(dragButton===0&&isDragging&&selectedObj){
+    // transform drag
+    if(mode==='object'&&(tool==='move'||tool==='scale'||tool==='rotate')){
+      pushUndoDebounced();
+      const speed=camera.distance*0.004;
+      const {right,up}=getViewMatrix();
+      if(tool==='move'){
+        // Move only via gizmo (W/G key) — not drag
+      } else if(tool==='scale'){
+        const factor=1+(dx-dy)*0.005;
+        selectedObj.scale=V3(selectedObj.scale.x*factor,selectedObj.scale.y*factor,selectedObj.scale.z*factor);
+      } else if(tool==='rotate'){
+        selectedObj.rotation.y+=dx*0.01;
+        selectedObj.rotation.x+=dy*0.01;
+      }
+      updateTransformPanel();
+      render();
+    } else if(mode==='edit'&&selectedObj&&(tool==='move'||tool==='rotate'||tool==='scale')&&editSelection.size>0){
+      pushUndoDebounced();
+      const speed=camera.distance*0.004;
+      const {right,up}=getViewMatrix();
+      const mObj=getObjectMatrix(selectedObj);
+      const mInv=invertMat4Simple(mObj);
+      const worldDelta=v3mul(V3(0,0,0),0); // move via gizmo only
+      // apply in local space
+      const idxList=[...editSelection];
+      if(subMode==='vertex'){
+        idxList.forEach(vi=>{
+          const wv=mat4transform(mObj,selectedObj.verts[vi]);
+          const nw=v3add(wv,worldDelta);
+          selectedObj.verts[vi]=mat4transform(mInv,nw);
+        });
+      } else if(subMode==='edge'){
+        const moved=new Set();
+        idxList.forEach(ei=>{
+          const e=selectedObj.edges[ei];
+          e.forEach(vi=>{
+            if(moved.has(vi))return;
+            moved.add(vi);
+            const wv=mat4transform(mObj,selectedObj.verts[vi]);
+            const nw=v3add(wv,worldDelta);
+            selectedObj.verts[vi]=mat4transform(mInv,nw);
+          });
+        });
+      } else if(subMode==='face'){
+        const moved=new Set();
+        idxList.forEach(fi=>{
+          selectedObj.faces[fi].forEach(vi=>{
+            if(moved.has(vi))return;
+            moved.add(vi);
+            const wv=mat4transform(mObj,selectedObj.verts[vi]);
+            const nw=v3add(wv,worldDelta);
+            selectedObj.verts[vi]=mat4transform(mInv,nw);
+          });
+        });
+      }
+    } else if(tool==='rotate'&&editSelection.size>0){
+      // Rotate selected verts around their centroid
+      const affected=new Set();
+      if(subMode==='vertex') idxList.forEach(i=>affected.add(i));
+      else if(subMode==='edge') idxList.forEach(ei=>selectedObj.edges[ei].forEach(vi=>affected.add(vi)));
+      else if(subMode==='face') idxList.forEach(fi=>selectedObj.faces[fi].forEach(vi=>affected.add(vi)));
+      const affArr=[...affected];
+      const centroid=affArr.reduce((s,vi)=>v3add(s,selectedObj.verts[vi]),V3(0,0,0));
+      const cen=v3mul(centroid,1/affArr.length);
+      const angle=(dx-dy)*0.015;
+      const cosA=Math.cos(angle),sinA=Math.sin(angle);
+      affArr.forEach(vi=>{
+        const v=selectedObj.verts[vi];
+        const rx=v.x-cen.x,rz=v.z-cen.z;
+        selectedObj.verts[vi]=V3(cen.x+rx*cosA-rz*sinA,v.y,cen.z+rx*sinA+rz*cosA);
+      });
+    } else if(tool==='scale'&&editSelection.size>0){
+      const affected=new Set();
+      if(subMode==='vertex') idxList.forEach(i=>affected.add(i));
+      else if(subMode==='edge') idxList.forEach(ei=>selectedObj.edges[ei].forEach(vi=>affected.add(vi)));
+      else if(subMode==='face') idxList.forEach(fi=>selectedObj.faces[fi].forEach(vi=>affected.add(vi)));
+      const affArr=[...affected];
+      const centroid=affArr.reduce((s,vi)=>v3add(s,selectedObj.verts[vi]),V3(0,0,0));
+      const cen=v3mul(centroid,1/affArr.length);
+      const factor=1+(dx-dy)*0.006;
+      affArr.forEach(vi=>{
+        const v=selectedObj.verts[vi];
+        selectedObj.verts[vi]=V3(cen.x+(v.x-cen.x)*factor,cen.y+(v.y-cen.y)*factor,cen.z+(v.z-cen.z)*factor);
+      });
+    }
+    render();
+  }
+
+  lastMouse={x:_lmm.x,y:_lmm.y};
+});
+
+canvas.addEventListener('mouseup',e=>{
+  if(lassoActive&&tool==='lasso'){
+    lassoActive=false;
+    applyLassoSelection(e.shiftKey);
+    clearLasso();
+  }
+  if(sculpt.painting){ sculpt.painting=false; render(); drawSculptCursor(lastMouse.x,lastMouse.y,canvas.width,canvas.height); }
+  isDragging=false;
+});
+canvas.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const zcam=quadView?cameras[activeQuad]:camera;
+  zcam.distance=Math.max(0.5,Math.min(80,zcam.distance*(1+e.deltaY*0.001)));
+  if(quadView)camera=cameras[activeQuad];
+  render();
+},{passive:false});
+
+canvas.addEventListener('mouseleave',()=>{
+  if(mode==='sculpt') render(); // clear cursor
+});
+canvas.addEventListener('contextmenu',e=>{
+  e.preventDefault();
+  if(e.shiftKey){
+    // Shift+RMB: place 3D cursor at mouse position in world space
+    place3DCursor(e.offsetX, e.offsetY);
+    return;
+  }
+  const menu=document.getElementById('ctx-menu');
+  menu.style.display='block';
+  menu.style.left=e.clientX+'px';
+  menu.style.top=e.clientY+'px';
+});
+document.addEventListener('click',hideMenu);
+}
+function hideMenu(){document.getElementById('ctx-menu').style.display='none';}
+document.addEventListener('click',e=>{
+  const sb=document.getElementById('sidebar');
+  const tog=document.getElementById('sidebar-toggle');
+  if(sb&&sb.classList.contains('open')&&!sb.contains(e.target)&&e.target!==tog){
+    sb.classList.remove('open');
+  }
+});
+
+// ========== KEYBOARD ==========
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT')return;
+  const k=e.key.toLowerCase();
+  // 1=Face(edit) 2=Edge(edit) 3=Vertex(edit) 4=Object
+  // 1=Face 2=Edge 3=Vertex 4=Object — global shortcuts, switch mode if needed
+  if(k==='1'&&!e.ctrlKey){e.preventDefault();setMode('edit');setSubMode('face');}
+  if(k==='2'&&!e.ctrlKey){e.preventDefault();setMode('edit');setSubMode('edge');}
+  if(k==='3'&&!e.ctrlKey){e.preventDefault();setMode('edit');setSubMode('vertex');}
+  if(k==='4'&&!e.ctrlKey){e.preventDefault();setMode('object');}
+  if(k==='5'&&!e.ctrlKey){e.preventDefault();setMode('sculpt');}
+  // Sculpt brush shortcuts
+  if(mode==='sculpt'){
+    if(k==='d')setSculptBrush('draw');
+    if(k==='s'&&!e.ctrlKey)setSculptBrush('smooth');
+    if(k==='f')setSculptBrush('flatten');
+    if(k==='p')setSculptBrush('pinch');
+    if(k==='i')setSculptBrush('inflate');
+    if(k==='c')setSculptBrush('crease');
+    if(k==='v')setSculptBrush('clay');
+    if(k==='t')setSculptBrush('scrape');
+    if(k==='[')sculpt.radius=Math.max(10,sculpt.radius-10);
+    if(k===']')sculpt.radius=Math.min(200,sculpt.radius+10);
+  }
+  if(mode==='edit'){
+    if(k==='e')extrudeSelected();
+    if(k==='k')loopCut();
+    if(k==='m')mergeVertices();
+    if(k==='a'){e.preventDefault();selectAll();}
+    if(k==='l'&&!e.altKey&&!e.ctrlKey){e.preventDefault();selectLinkedLoop();}
+    if(k==='l'&&e.ctrlKey){e.preventDefault();selectLinkedRing();}
+    if((k==='delete')||(k==='x'&&!gizmo.active))deleteEditSelected();
+  }
+  if(k==='w'||k==='g'){e.preventDefault();startGizmo('move');}
+  if(k==='x'&&e.shiftKey){e.preventDefault();toggleSym('x');}
+  if(k==='y'&&e.shiftKey){e.preventDefault();toggleSym('y');}
+  if(k==='z'&&e.shiftKey){e.preventDefault();toggleSym('z');}
+  // Axis lock inside active gizmo
+  if(gizmo.active){
+    if(k==='x'){gizmo.axis='x';render();}
+    if(k==='y'){gizmo.axis='y';render();}
+    if(k==='z'){gizmo.axis='z';render();}
+    if(k==='escape'){cancelGizmo();}
+    if(k==='enter'){confirmGizmo();}
+  }
+  if(k==='s'&&!e.ctrlKey){e.preventDefault();startGizmo('scale');}
+  if(k==='r'){e.preventDefault();startGizmo('rotate');}
+  if(k==='q')setTool('select');
+  if(k==='l')setTool('lasso');
+  if(k==='z'&&(e.ctrlKey||e.metaKey)){e.preventDefault();undo();}
+  if(k==='y'&&(e.ctrlKey||e.metaKey)){e.preventDefault();redo();}
+  if(k==='z'&&e.shiftKey&&(e.ctrlKey||e.metaKey)){e.preventDefault();redo();}
+  if(k==='d'&&e.shiftKey)duplicateSelected();
+  if(k==='delete'||(k==='x'&&!gizmo.active)){if(mode==='object')deleteSelected();}
+  // numpad views
+  if(e.code==='Numpad1')viewPreset('front');
+  if(e.code==='Numpad3')viewPreset('right');
+  if(e.code==='Numpad7')viewPreset('top');
+  if(e.code==='Numpad5')viewPreset('persp');
+});
+
+// ========== EDIT OPS ==========
+function extrudeSelected(){
+  if(!selectedObj||mode!=='edit'){toast('Must be in Edit mode');return;}
+  if(editSelection.size===0){toast('Select an element first');return;}
+  pushUndo();
+  const obj=selectedObj;
+
+  if(subMode==='face'){
+    const selArr=[...editSelection];
+
+    // 1. Compute average normal of all selected faces
+    let avgNormal=V3(0,0,0);
+    selArr.forEach(fi=>{
+      const n=getFaceNormal(obj.verts,obj.faces[fi],obj.verts);
+      avgNormal=v3add(avgNormal,n);
+    });
+    avgNormal=v3norm(avgNormal);
+    const dist=0.5;
+
+    // 2. Find boundary edges: edges shared by exactly one selected face (interior edges shared by 2)
+    const edgeCount=new Map();
+    selArr.forEach(fi=>{
+      const face=obj.faces[fi];
+      for(let i=0;i<face.length;i++){
+        const a=face[i], b=face[(i+1)%face.length];
+        const key=Math.min(a,b)+','+Math.max(a,b);
+        // store directed edge so we know winding
+        if(!edgeCount.has(key)) edgeCount.set(key,{count:0,edges:[]});
+        edgeCount.get(key).count++;
+        edgeCount.get(key).edges.push([a,b]);
+      }
+    });
+    // Boundary = edges with count === 1 (not shared between two selected faces)
+    const boundaryEdges=[]; // each is [a, b] with original face winding
+    edgeCount.forEach((v,key)=>{
+      if(v.count===1) boundaryEdges.push(v.edges[0]);
+    });
+
+    // 3. Collect all unique boundary vertices
+    const boundaryVertSet=new Set();
+    boundaryEdges.forEach(([a,b])=>{boundaryVertSet.add(a);boundaryVertSet.add(b);});
+
+    // 4. Create new (top) vertex for each boundary vertex, shared across faces
+    const oldToNew=new Map();
+    boundaryVertSet.forEach(vi=>{
+      obj.verts.push(v3add(obj.verts[vi],v3mul(avgNormal,dist)));
+      oldToNew.set(vi, obj.verts.length-1);
+    });
+
+    // 5. Build side quads only along boundary edges
+    boundaryEdges.forEach(([a,b])=>{
+      const na=oldToNew.get(a), nb=oldToNew.get(b);
+      // Winding: a->b on bottom, nb->na on top (outward side)
+      obj.faces.push([a,b,nb,na]);
+    });
+
+    // 6. Replace each selected face: boundary verts -> new verts, interior verts stay
+    const newFaceIndices=[];
+    selArr.forEach(fi=>{
+      obj.faces[fi]=obj.faces[fi].map(vi=>oldToNew.has(vi)?oldToNew.get(vi):vi);
+      newFaceIndices.push(fi);
+    });
+
+    rebuildEdges(obj);
+    editSelection.clear();
+    newFaceIndices.forEach(i=>editSelection.add(i));
+    toast('Face extruded ✓');
+  } else if(subMode==='edge'){
+    // Shared vertices get ONE new vertex (not duplicated per edge)
+    const vertMap=new Map(); // oldVi -> newVi
+    const newEdgeIdxs=[];
+
+    editSelection.forEach(ei=>{
+      const edge=obj.edges[ei];
+      [edge[0],edge[1]].forEach(vi=>{
+        if(!vertMap.has(vi)){
+          obj.verts.push(v3add(obj.verts[vi],V3(0,0.5,0)));
+          vertMap.set(vi,obj.verts.length-1);
+        }
+      });
+      const ni0=vertMap.get(edge[0]),ni1=vertMap.get(edge[1]);
+      obj.faces.push([edge[0],edge[1],ni1,ni0]);
+      // track new top edge for selection
+      newEdgeIdxs.push([ni0,ni1]);
+    });
+
+    rebuildEdges(obj);
+    // Select new top edges
+    editSelection.clear();
+    obj.edges.forEach((e,i)=>{
+      if(newEdgeIdxs.some(ne=>(ne[0]===e[0]&&ne[1]===e[1])||(ne[0]===e[1]&&ne[1]===e[0])))
+        editSelection.add(i);
+    });
+    toast('Edge extruded ✓');
+  } else if(subMode==='vertex'){
+    const newIdxs=[];
+    editSelection.forEach(vi=>{
+      obj.verts.push(v3add(obj.verts[vi],V3(0,0.5,0)));
+      newIdxs.push(obj.verts.length-1);
+    });
+    rebuildEdges(obj);
+    editSelection.clear();
+    newIdxs.forEach(i=>editSelection.add(i));
+    toast('Vertex extruded ✓');
+  }
+  render();
+}
+
+function mergeVertices(){
+  if(!selectedObj||mode!=='edit'||subMode!=='vertex'){toast('Switch to Vertex mode (3)');return;}
+  if(editSelection.size<2){toast('Select at least 2 vertices');return;}
+  pushUndo();
+  const obj=selectedObj;
+  const indices=[...editSelection];
+  const count=indices.length;
+
+  // 1. Compute center of selected vertices
+  const center=indices.reduce((s,i)=>v3add(s,obj.verts[i]),V3(0,0,0));
+  const avg=v3mul(center,1/count);
+
+  // 2. Keep the first index, move it to center, mark rest for removal
+  const keepIdx=indices[0];
+  obj.verts[keepIdx]=avg;
+  const removeSet=new Set(indices.slice(1));
+
+  // 3. Remap all face vertex refs: merged verts -> keepIdx
+  obj.faces=obj.faces.map(face=>{
+    const remapped=face.map(vi=>removeSet.has(vi)?keepIdx:vi);
+    // Deduplicate while preserving order, need at least 3 unique
+    const deduped=[];
+    remapped.forEach(vi=>{if(deduped[deduped.length-1]!==vi)deduped.push(vi);});
+    if(deduped[0]===deduped[deduped.length-1])deduped.pop();
+    return deduped.length>=3?deduped:null;
+  }).filter(Boolean);
+
+  // 4. Build oldToNew index map after removing merged verts
+  const oldToNew=new Array(obj.verts.length);
+  let cur=0;
+  for(let i=0;i<obj.verts.length;i++){
+    oldToNew[i]=removeSet.has(i)?-1:cur++;
+  }
+
+  // 5. Remove verts and remap faces
+  obj.verts=obj.verts.filter((_,i)=>!removeSet.has(i));
+  obj.faces=obj.faces.map(face=>
+    face.map(vi=>oldToNew[vi]).filter(vi=>vi>=0)
+  ).filter(f=>f.length>=3);
+
+  rebuildEdges(obj);
+  editSelection.clear();
+  if(oldToNew[keepIdx]>=0) editSelection.add(oldToNew[keepIdx]);
+  toast(count+' vertices merged ✓');
+  render();
+}
+
+// ========== LOOP / RING UTILITIES ==========
+
+// edge key helper
+function eKey(a,b){return Math.min(a,b)+','+Math.max(a,b);}
+
+// Map: edgeKey -> list of face indices that contain it
+function buildE2F(obj){
+  const m=new Map();
+  obj.faces.forEach((f,fi)=>{
+    for(let i=0;i<f.length;i++){
+      const k=eKey(f[i],f[(i+1)%f.length]);
+      if(!m.has(k))m.set(k,[]);
+      m.get(k).push(fi);
+    }
+  });
+  return m;
+}
+
+// In a quad face [v0,v1,v2,v3], given edge (vA,vB) at consecutive positions,
+// return the opposite edge (across the quad)
+function oppositeEdgeInQuad(face,vA,vB){
+  const n=face.length;
+  if(n!==4)return null;
+  for(let i=0;i<4;i++){
+    if(face[i]===vA&&face[(i+1)%4]===vB){
+      // opposite edge starts at (i+2)%4
+      const j=(i+2)%4;
+      return[face[j],face[(j+1)%4]];
+    }
+    if(face[i]===vB&&face[(i+1)%4]===vA){
+      const j=(i+2)%4;
+      return[face[j],face[(j+1)%4]];
+    }
+  }
+  return null;
+}
+
+// Walk an edge loop: follow opposite edges through quad faces
+// Returns set of edge keys forming the loop
+function walkLoop(startA,startB,obj,e2f){
+  const loopKeys=new Set();
+  // walk in 2 directions from starting edge
+  for(const [wa,wb] of [[startA,startB],[startB,startA]]){
+    let a=wa,b=wb;
+    for(let step=0;step<500;step++){
+      const k=eKey(a,b);
+      if(loopKeys.has(k))break;
+      loopKeys.add(k);
+      // find a quad face containing edge (a,b)
+      const faces=e2f.get(k)||[];
+      let advanced=false;
+      for(const fi of faces){
+        const face=obj.faces[fi];
+        if(face.length!==4)continue;
+        const opp=oppositeEdgeInQuad(face,a,b);
+        if(!opp)continue;
+        const nk=eKey(opp[0],opp[1]);
+        if(loopKeys.has(nk))continue;
+        a=opp[0]; b=opp[1];
+        advanced=true;
+        break;
+      }
+      if(!advanced)break;
+    }
+  }
+  return loopKeys;
+}
+
+// Edge RING: edges parallel to start edge, stepping across quad faces
+// Ring direction: from edge (a→b), cross the quad to its opposite edge,
+// then from that opposite edge's face find the NEXT opposite (same direction)
+// This gives a "ring" — a band of parallel edges around the mesh.
+function walkRing(startA,startB,obj,e2f){
+  const ringKeys=new Set();
+  // A ring walks by: in each quad face containing the current edge,
+  // jump to the OPPOSITE edge (loop-step), then from that edge's OTHER face,
+  // jump to ITS opposite edge (another loop-step) — this zigzags across faces
+  // giving a ring that runs perpendicular to the edge loop direction.
+  for(const [wa,wb] of [[startA,startB],[startB,startA]]){
+    let a=wa,b=wb;
+    let lastFi=-1;
+    for(let step=0;step<500;step++){
+      const k=eKey(a,b);
+      if(ringKeys.has(k))break;
+      ringKeys.add(k);
+      // Find a quad face that contains (a,b) and isn't where we came from
+      const faces=e2f.get(k)||[];
+      let advanced=false;
+      for(const fi of faces){
+        if(fi===lastFi)continue;
+        const face=obj.faces[fi];
+        if(face.length!==4)continue;
+        // Get opposite edge in this quad
+        const opp=oppositeEdgeInQuad(face,a,b);
+        if(!opp)continue;
+        const ok=eKey(opp[0],opp[1]);
+        // Now from that opposite edge, find its OTHER face and get its opposite
+        const oppFaces=e2f.get(ok)||[];
+        const nextFi=oppFaces.find(f2=>f2!==fi);
+        if(nextFi===undefined){
+          // boundary — ring ends here
+          break;
+        }
+        const nextFace=obj.faces[nextFi];
+        if(nextFace.length!==4)break;
+        const opp2=oppositeEdgeInQuad(nextFace,opp[0],opp[1]);
+        if(!opp2)break;
+        lastFi=nextFi;
+        a=opp2[0]; b=opp2[1];
+        advanced=true;
+        break;
+      }
+      if(!advanced)break;
+    }
+  }
+  return ringKeys;
+}
+
+// Convert key set to edge indices
+function keysToEdgeIdxs(keySet,obj){
+  const result=[];
+  obj.edges.forEach((e,i)=>{
+    if(keySet.has(eKey(e[0],e[1])))result.push(i);
+  });
+  return result;
+}
+
+// Public: find loop edge indices from edge index
+function findEdgeLoop(startEi,obj){
+  const e2f=buildE2F(obj);
+  const e=obj.edges[startEi];
+  return keysToEdgeIdxs(walkLoop(e[0],e[1],obj,e2f),obj);
+}
+
+// Public: find ring edge indices from edge index
+function findEdgeRing(startEi,obj){
+  const e2f=buildE2F(obj);
+  const e=obj.edges[startEi];
+  return keysToEdgeIdxs(walkRing(e[0],e[1],obj,e2f),obj);
+}
+
+// Face loop: walk through opposite edges of quad faces
+function findFaceLoop(startFi,obj){
+  const e2f=buildE2F(obj);
+  const loop=new Set([startFi]);
+  // try both axis directions
+  const face=obj.faces[startFi];
+  if(face.length!==4)return[startFi];
+  for(let dir=0;dir<2;dir++){
+    let curFi=startFi;
+    for(let step=0;step<500;step++){
+      const cf=obj.faces[curFi];
+      if(cf.length!==4)break;
+      // cross edge at dir and dir+2
+      const ea=cf[dir],eb=cf[(dir+1)%4];
+      const k=eKey(ea,eb);
+      const neighbors=e2f.get(k)||[];
+      const next=neighbors.find(fi=>fi!==curFi&&!loop.has(fi));
+      if(next===undefined)break;
+      loop.add(next);
+      curFi=next;
+    }
+  }
+  return[...loop];
+}
+
+function findLoop(idx){
+  if(!selectedObj)return[idx];
+  const obj=selectedObj;
+  if(subMode==='edge')return findEdgeLoop(idx,obj);
+  if(subMode==='face')return findFaceLoop(idx,obj);
+  if(subMode==='vertex'){
+    // vertex loop: all verts connected via edges
+    const result=new Set([idx]);
+    obj.edges.forEach(e=>{
+      if(e[0]===idx)result.add(e[1]);
+      if(e[1]===idx)result.add(e[0]);
+    });
+    return[...result];
+  }
+  return[idx];
+}
+
+function findRing(idx){
+  if(!selectedObj||subMode!=='edge')return[idx];
+  return findEdgeRing(idx,selectedObj);
+}
+
+function selectLinkedLoop(){
+  if(!selectedObj||editSelection.size===0)return;
+  const all=new Set([...editSelection]);
+  [...editSelection].forEach(idx=>findLoop(idx).forEach(i=>all.add(i)));
+  editSelection.clear();
+  all.forEach(i=>editSelection.add(i));
+  render();
+}
+
+function selectLinkedRing(){
+  if(!selectedObj||editSelection.size===0||subMode!=='edge'){toast('Select edges first');return;}
+  const all=new Set([...editSelection]);
+  [...editSelection].forEach(idx=>findEdgeRing(idx,selectedObj).forEach(i=>all.add(i)));
+  editSelection.clear();
+  all.forEach(i=>editSelection.add(i));
+  toast('Ring selected: '+all.size+' edges');
+  render();
+}
+
+// Loop Cut: select an edge, press Loop Cut — cuts the perpendicular ring
+function loopCut(){
+  if(!selectedObj){toast('Select an object first');return;}
+  // Auto-enter edit mode if needed
+  if(mode!=='edit'){setMode('edit');setSubMode('edge');}
+  pushUndo();
+  const obj=selectedObj;
+  const e2f=buildE2F(obj);
+
+  let cutKeys=new Set();
+  if(subMode==='edge'&&editSelection.size>0){
+    // Cut the loop of each selected edge
+    [...editSelection].forEach(ei=>{
+      const e=obj.edges[ei];
+      walkLoop(e[0],e[1],obj,e2f).forEach(k=>cutKeys.add(k));
+    });
+  } else {
+    // No edge selected — find first cuttable loop automatically
+    for(const e of obj.edges){
+      const k=eKey(e[0],e[1]);
+      const adjFaces=e2f.get(k)||[];
+      if(adjFaces.length===2&&
+         obj.faces[adjFaces[0]].length===4&&
+         obj.faces[adjFaces[1]].length===4){
+        walkLoop(e[0],e[1],obj,e2f).forEach(lk=>cutKeys.add(lk));
+        break;
+      }
+    }
+  }
+
+  if(cutKeys.size===0){toast('No cuttable edges (select an edge on a quad mesh)');return;}
+
+  // Create midpoints
+  const midMap=new Map();
+  cutKeys.forEach(k=>{
+    const [a,b]=k.split(',').map(Number);
+    obj.verts.push(v3lerp(obj.verts[a],obj.verts[b],0.5));
+    midMap.set(k,obj.verts.length-1);
+  });
+
+  // Split faces
+  const newFaces=[];
+  const newMidSet=new Set();
+  obj.faces.forEach(face=>{
+    if(face.length!==4){newFaces.push(face);return;}
+    // Find cut edges in this face
+    const cuts=[];
+    for(let i=0;i<4;i++){
+      const k=eKey(face[i],face[(i+1)%4]);
+      if(midMap.has(k))cuts.push({i,mid:midMap.get(k)});
+    }
+    if(cuts.length===2){
+      const [c0,c1]=cuts;
+      newMidSet.add(c0.mid); newMidSet.add(c1.mid);
+      // Build 2 quads: collect verts from c0 to c1, then c1 to c0
+      const quad1=[c0.mid];
+      for(let s=(c0.i+1)%4;s!==c1.i;s=(s+1)%4)quad1.push(face[s]);
+      quad1.push(face[c1.i],c1.mid);
+      const quad2=[c1.mid];
+      for(let s=(c1.i+1)%4;s!==c0.i;s=(s+1)%4)quad2.push(face[s]);
+      quad2.push(face[c0.i],c0.mid);
+      if(quad1.length>=3)newFaces.push(quad1);
+      if(quad2.length>=3)newFaces.push(quad2);
+    } else {
+      newFaces.push(face);
+    }
+  });
+
+  obj.faces=newFaces;
+  rebuildEdges(obj);
+
+  // Select new cut edges
+  editSelection.clear();
+  obj.edges.forEach((e,i)=>{
+    if(newMidSet.has(e[0])&&newMidSet.has(e[1]))editSelection.add(i);
+  });
+
+  toast('Loop cut: '+midMap.size+' edges ✓  —  G to slide');
+  render();
+}
+
+function selectAll(){
+  if(!selectedObj)return;
+  const maxIdx=subMode==='vertex'?selectedObj.verts.length:
+               subMode==='edge'?selectedObj.edges.length:selectedObj.faces.length;
+  if(editSelection.size===maxIdx){editSelection.clear();}
+  else{for(let i=0;i<maxIdx;i++)editSelection.add(i);}
+  render();
+}
+
+function invertSelection(){
+  if(!selectedObj)return;
+  const maxIdx=subMode==='vertex'?selectedObj.verts.length:
+               subMode==='edge'?selectedObj.edges.length:selectedObj.faces.length;
+  const newSel=new Set();
+  for(let i=0;i<maxIdx;i++){if(!editSelection.has(i))newSel.add(i);}
+  editSelection=newSel;
+  render();
+}
+
+function deleteEditSelected(){
+  if(!selectedObj||editSelection.size===0)return;
+  pushUndo();
+  const obj=selectedObj;
+  if(subMode==='face'){
+    obj.faces=obj.faces.filter((_,i)=>!editSelection.has(i));
+    rebuildEdges(obj);
+  } else if(subMode==='edge'){
+    const seenEdges=new Set([...editSelection].map(i=>`${obj.edges[i][0]},${obj.edges[i][1]}`));
+    obj.faces=obj.faces.filter(face=>{
+      for(let i=0;i<face.length;i++){
+        const a=face[i],b=face[(i+1)%face.length];
+        if(seenEdges.has(`${a},${b}`)||seenEdges.has(`${b},${a}`))return false;
+      }
+      return true;
+    });
+    obj.edges=obj.edges.filter((_,i)=>!editSelection.has(i));
+  } else if(subMode==='vertex'){
+    const removeSet=new Set([...editSelection]);
+    obj.faces=obj.faces.filter(face=>!face.some(vi=>removeSet.has(vi)));
+    const oldToNew=[];let cur=0;
+    for(let i=0;i<obj.verts.length;i++){
+      if(removeSet.has(i))oldToNew.push(-1);else oldToNew.push(cur++);
+    }
+    obj.verts=obj.verts.filter((_,i)=>!removeSet.has(i));
+    obj.faces=obj.faces.map(face=>face.map(vi=>oldToNew[vi]));
+    rebuildEdges(obj);
+  }
+  editSelection.clear();
+  toast('Deleted');
+  render();
+}
+
+function subdivide(){
+  if(!selectedObj)return;
+  pushUndo();
+  const obj=selectedObj;
+  const newVerts=[...obj.verts];
+  const edgeMidMap={};
+  function getEdgeMid(a,b){
+    const key=Math.min(a,b)+','+Math.max(a,b);
+    if(edgeMidMap[key]===undefined){
+      const mid=v3lerp(newVerts[a],newVerts[b],0.5);
+      newVerts.push(mid);
+      edgeMidMap[key]=newVerts.length-1;
+    }
+    return edgeMidMap[key];
+  }
+  const newFaces=[];
+  obj.faces.forEach(face=>{
+    const mids=face.map((v,i)=>getEdgeMid(v,face[(i+1)%face.length]));
+    if(face.length===4){
+      const center=v3mul(face.reduce((s,vi)=>v3add(s,newVerts[vi]),V3(0,0,0)),0.25);
+      newVerts.push(center);const ci=newVerts.length-1;
+      newFaces.push([face[0],mids[0],ci,mids[3]]);
+      newFaces.push([mids[0],face[1],mids[1],ci]);
+      newFaces.push([ci,mids[1],face[2],mids[2]]);
+      newFaces.push([mids[3],ci,mids[2],face[3]]);
+    } else {
+      face.forEach((v,i)=>newFaces.push([v,mids[i],mids[(i-1+face.length)%face.length]]));
+    }
+  });
+  obj.verts=newVerts;
+  obj.faces=newFaces;
+  rebuildEdges(obj);
+  toast('Subdivide applied');
+  render();
+}
+
+function deleteSelected(){
+  if(!selectedObj)return;
+  pushUndo();
+  objects=objects.filter(o=>o!==selectedObj);
+  selectedObj=null;
+  editSelection.clear();
+  updateObjList();
+  updateTransformPanel();
+  toast('Object deleted');
+  render();
+}
+
+function duplicateSelected(){
+  if(!selectedObj)return;
+  pushUndo();
+  const o=selectedObj;
+  const copy={
+    ...o,
+    id:Date.now()+Math.random(),
+    name:o.name+' Copy',
+    position:V3(o.position.x+0.5,o.position.y,o.position.z+0.5),
+    rotation:V3(o.rotation.x,o.rotation.y,o.rotation.z),
+    scale:V3(o.scale.x,o.scale.y,o.scale.z),
+    verts:o.verts.map(v=>V3(v.x,v.y,v.z)),
+    faces:o.faces.map(f=>[...f]),
+    edges:o.edges.map(e=>[...e])
+  };
+  objects.push(copy);
+  selectObject(copy);
+  toast('Object duplicated');
+  updateObjList();
+  render();
+}
+
+// ========== VIEWS ==========
+function viewPreset(v){
+  const cam=quadView?cameras[activeQuad]:camera;
+  if(v==='front'){cam.azimuth=0;cam.elevation=0;cam.ortho=true;}
+  else if(v==='top'){cam.azimuth=0;cam.elevation=Math.PI/2-0.01;cam.ortho=true;}
+  else if(v==='right'){cam.azimuth=Math.PI/2;cam.elevation=0;cam.ortho=true;}
+  else if(v==='persp'){cam.azimuth=0.6;cam.elevation=0.4;cam.ortho=false;}
+  render();
+}
+
+function resetView(){
+  cameras=[
+    {azimuth:0,      elevation:1.5699, distance:10, target:V3(0,0,0), label:'TOP',   ortho:true},
+    {azimuth:0,      elevation:0,      distance:10, target:V3(0,0,0), label:'FRONT', ortho:true},
+    {azimuth:1.5708, elevation:0,      distance:10, target:V3(0,0,0), label:'RIGHT', ortho:true},
+    {azimuth:0.6,    elevation:0.4,    distance:8,  target:V3(0,0,0), label:'PERSP', ortho:false},
+  ];
+  camera=cameras[quadView?activeQuad:3];
+  render();
+}
+
+function toggleWireframe(v){wireframeMode=v;render();}
+function toggleGrid(v){showGrid=v;render();}
+
+// ========== UNDO ==========
+function serializeState(){
+  return JSON.stringify(objects.map(o=>({
+    ...o,
+    verts:o.verts.map(v=>({...v})),
+    faces:o.faces.map(f=>[...f]),
+    edges:o.edges.map(e=>[...e])
+  })));
+}
+function pushUndo(){undoStack.push({state:serializeState(),sel:selectedObj?.id});redoStack.length=0;}
+let undoTimer=null;
+function pushUndoDebounced(){
+  if(!undoTimer){pushUndo();}
+  clearTimeout(undoTimer);
+  undoTimer=setTimeout(()=>{undoTimer=null;},800);
+}
+function undo(){
+  if(undoStack.length===0){toast('Nothing to undo');return;}
+  redoStack.push({state:serializeState(),sel:selectedObj?.id});
+  const {state,sel}=undoStack.pop();
+  objects=JSON.parse(state);
+  selectedObj=sel?objects.find(o=>o.id===sel)||null:null;
+  editSelection.clear();
+  updateObjList();
+  updateTransformPanel();
+  toast('Undone (Ctrl+Y: redo)');
+  render();
+}
+function redo(){
+  if(redoStack.length===0){toast('Nothing to redo');return;}
+  undoStack.push({state:serializeState(),sel:selectedObj?.id});
+  const {state,sel}=redoStack.pop();
+  objects=JSON.parse(state);
+  selectedObj=sel?objects.find(o=>o.id===sel)||null:null;
+  editSelection.clear();
+  updateObjList();
+  updateTransformPanel();
+  toast('Redone');
+  render();
+}
+
+// ========== STATUS ==========
+function updateStatus(){
+  document.getElementById('s-obj').textContent=objects.length;
+  document.getElementById('s-sel').textContent=selectedObj?selectedObj.name:'-';
+  document.getElementById('s-verts').textContent=selectedObj?selectedObj.verts.length:0;
+  document.getElementById('s-edges').textContent=selectedObj?selectedObj.edges.length:0;
+  document.getElementById('s-faces').textContent=selectedObj?selectedObj.faces.length:0;
+  // Tri count: each face with N verts = N-2 triangles
+  const tris=selectedObj?selectedObj.faces.reduce((s,f)=>s+Math.max(0,f.length-2),0):0;
+  document.getElementById('s-tris').textContent=tris;
+  // Edit selection count
+  const wrap=document.getElementById('s-editsel-wrap');
+  const label=document.getElementById('s-editsel-label');
+  const val=document.getElementById('s-editsel');
+  if(mode==='edit'&&selectedObj){
+    wrap.style.display='flex';
+    const word=subMode==='vertex'?'Vertices':subMode==='edge'?'Edges':'Faces';
+    label.textContent=word+' Selected:';
+    val.textContent=editSelection.size;
+  } else {
+    wrap.style.display='none';
+  }
+}
+
+// ========== OBJ EXPORT ==========
+function calcFaceNormalWorld(worldVerts, face){
+  if(face.length<3)return V3(0,1,0);
+  const v0=worldVerts[face[0]],v1=worldVerts[face[1]],v2=worldVerts[face[2]];
+  return v3norm(v3cross(v3sub(v1,v0),v3sub(v2,v0)));
+}
+
+function buildOBJContent(){
+  let out='# 3D Modeler Export\n# Exported for UE4/UE5 compatibility\n\n';
+  let vertOffset=1;
+  let normOffset=1;
+
+  for(const obj of objects){
+    const mObj=getObjectMatrix(obj);
+    const worldVerts=obj.verts.map(v=>mat4transform(mObj,v));
+
+    out+=`o ${obj.name.replace(/\s+/g,'_')}\n`;
+
+    // Vertices
+    worldVerts.forEach(v=>out+=`v ${v.x.toFixed(6)} ${v.y.toFixed(6)} ${v.z.toFixed(6)}\n`);
+    out+='\n';
+
+    // Per-face normals
+    obj.faces.forEach(face=>{
+      const n=calcFaceNormalWorld(worldVerts,face);
+      out+=`vn ${n.x.toFixed(6)} ${n.y.toFixed(6)} ${n.z.toFixed(6)}\n`;
+    });
+    out+='\n';
+
+    // Faces with vertex//normal indices
+    obj.faces.forEach((face,fi)=>{
+      const ni=fi+normOffset;
+      out+='f '+face.map(i=>`${i+vertOffset}//${ni}`).join(' ')+'\n';
+    });
+    out+='\n';
+
+    vertOffset+=worldVerts.length;
+    normOffset+=obj.faces.length;
+  }
+  return out;
+}
+
+function exportOBJ(){
+  if(objects.length===0){toast('No objects to export');return;}
+  const out=buildOBJContent();
+
+  // 1. Try File System Access API (Chrome/Edge — shows native Save dialog)
+  if(window.showSaveFilePicker){
+    window.showSaveFilePicker({
+      suggestedName:'model.obj',
+      types:[{description:'Wavefront OBJ',accept:{'text/plain':['.obj']}}]
+    }).then(fh=>fh.createWritable())
+      .then(w=>w.write(out).then(()=>w.close()))
+      .then(()=>toast('Saved to disk ✓'))
+      .catch(err=>{
+        if(err.name!=='AbortError') exportFallback(out);
+      });
+    return;
+  }
+  exportFallback(out);
+}
+
+function exportFallback(out){
+  // Try blob URL download
+  try{
+    const blob=new Blob([out],{type:'text/plain'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url; a.download='model.obj';
+    document.body.appendChild(a);
+    a.dispatchEvent(new MouseEvent('click',{bubbles:true,cancelable:true,view:window}));
+    setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(url);},2000);
+  }catch(e){}
+
+  // Always show copy dialog — most reliable in any environment
+  showOBJDialog(out);
+}
+
+function showOBJDialog(content){
+  const existing=document.getElementById('obj-dialog');
+  if(existing) existing.remove();
+  const dlg=document.createElement('div');
+  dlg.id='obj-dialog';
+  dlg.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:3000;display:flex;align-items:center;justify-content:center;';
+  dlg.innerHTML=`
+    <div style="background:#242426;border:1px solid #48484a;border-radius:10px;padding:20px;width:560px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:13px;font-weight:600;color:#f2f2f7;">OBJ Export — Copy & Save</span>
+        <button onclick="document.getElementById('obj-dialog').remove()" style="background:transparent;border:none;color:#aeaeb2;cursor:pointer;font-size:18px;line-height:1;">×</button>
+      </div>
+      <p style="font-size:11px;color:#aeaeb2;">Copy the content below and paste into a <code style="color:#ff6b35">.obj</code> file.</p>
+      <textarea readonly id="obj-text" style="flex:1;min-height:300px;background:#1c1c1e;border:1px solid #3a3a3c;border-radius:6px;color:#d0d0d0;font-family:monospace;font-size:10px;padding:10px;resize:none;outline:none;">${content}</textarea>
+      <div style="display:flex;gap:8px;">
+        <button onclick="navigator.clipboard.writeText(document.getElementById('obj-text').value).then(()=>{this.textContent='Copied ✓';setTimeout(()=>this.textContent='Copy to Clipboard',1500)}).catch(()=>{document.getElementById('obj-text').select();document.execCommand('copy');this.textContent='Copied ✓';setTimeout(()=>this.textContent='Copy to Clipboard',1500)})" style="flex:1;padding:8px 16px;background:#ff6b35;border:none;border-radius:6px;color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Copy to Clipboard</button>
+        <button onclick="(()=>{try{const b=new Blob([document.getElementById('obj-text').value],{type:'text/plain'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='model.obj';document.body.appendChild(a);a.click();setTimeout(()=>{document.body.removeChild(a);URL.revokeObjectURL(u)},1000)}catch(e){};})()" style="padding:8px 16px;background:#2c2c2e;border:1px solid #48484a;border-radius:6px;color:#f2f2f7;font-size:12px;font-weight:600;cursor:pointer;">⬇ Download</button>
+      </div>
+    </div>`;
+  document.body.appendChild(dlg);
+  dlg.addEventListener('click',e=>{if(e.target===dlg)dlg.remove();});
+}
+
+// ========== OBJ IMPORT ==========
+function importOBJ(input){
+  const file=input.files[0];
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    pushUndo();
+    toast('Parsing OBJ...');
+    // Use setTimeout to avoid UI freeze on large files
+    setTimeout(()=>{
+      const lines=e.target.result.split('\n');
+      let curVerts=[], curFaces=[], curName='Imported';
+      let verts=[], vertStart=0;
+      const flush=()=>{
+        if(curVerts.length>0){
+          const color=objColors[nextColor%objColors.length];nextColor++;
+          const obj={
+            id:Date.now()+Math.random(),name:curName,type:'imported',color,
+            position:V3(0,0,0),rotation:V3(0,0,0),scale:V3(1,1,1),
+            verts:curVerts,faces:curFaces,edges:[],visible:true
+          };
+          rebuildEdges(obj);
+          objects.push(obj);
+          selectObject(obj);
+        }
+      };
+      // Process in chunks to keep UI responsive
+      const CHUNK=5000;
+      let li=0;
+      function processChunk(){
+        const end=Math.min(li+CHUNK, lines.length);
+        for(;li<end;li++){
+          const parts=lines[li].trim().split(/\s+/);
+          if(parts[0]==='o'){
+            flush();curName=parts.slice(1).join(' ')||'Object';
+            curVerts=[];curFaces=[];vertStart=verts.length;
+          } else if(parts[0]==='v'){
+            const v=V3(parseFloat(parts[1])||0,parseFloat(parts[2])||0,parseFloat(parts[3])||0);
+            verts.push(v);curVerts.push(v);
+          } else if(parts[0]==='f'){
+            const face=parts.slice(1).map(p=>parseInt(p.split('/')[0])-1-vertStart);
+            if(face.every(i=>i>=0))curFaces.push(face);
+          }
+        }
+        if(li<lines.length){
+          const pct=Math.round(li/lines.length*100);
+          toast('Loading... '+pct+'%');
+          setTimeout(processChunk,0);
+        } else {
+          flush();
+          updateObjList();
+          render();
+          toast('OBJ imported: '+file.name+' ('+objects[objects.length-1]?.verts.length+' verts)');
+          input.value='';
+        }
+      }
+      processChunk();
+    },10);
+  };
+  reader.readAsText(file);
+}
+
+// ========== LASSO SELECTION ==========
+let lassoCtx=null;
+function initLasso(){
+  const lc=document.getElementById('lasso-canvas');
+  lc.width=canvas.width; lc.height=canvas.height;
+  lassoCtx=lc.getContext('2d');
+}
+function drawLasso(){
+  if(!lassoCtx||lassoPoints.length<2)return;
+  const lc=document.getElementById('lasso-canvas');
+  lassoCtx.clearRect(0,0,lc.width,lc.height);
+  lassoCtx.strokeStyle='rgba(255,160,60,0.9)';
+  lassoCtx.lineWidth=1.5;
+  lassoCtx.setLineDash([4,3]);
+  lassoCtx.beginPath();
+  lassoCtx.moveTo(lassoPoints[0].x,lassoPoints[0].y);
+  for(let i=1;i<lassoPoints.length;i++) lassoCtx.lineTo(lassoPoints[i].x,lassoPoints[i].y);
+  lassoCtx.closePath();
+  lassoCtx.stroke();
+  lassoCtx.fillStyle='rgba(255,160,60,0.08)';
+  lassoCtx.fill();
+  lassoCtx.setLineDash([]);
+}
+function clearLasso(){
+  if(!lassoCtx)return;
+  const lc=document.getElementById('lasso-canvas');
+  lassoCtx.clearRect(0,0,lc.width,lc.height);
+  lassoPoints=[];
+}
+function pointInLasso(px,py){
+  return pointInPoly(px,py,lassoPoints);
+}
+function applyLassoSelection(additive){
+  if(!selectedObj||lassoPoints.length<3)return;
+  const W=canvas.width,H=canvas.height;
+  const mObj=getObjectMatrix(selectedObj);
+  const worldVerts=selectedObj.verts.map(v=>mat4transform(mObj,v));
+  const projVerts=worldVerts.map(v=>project(v,W,H));
+  if(!additive) editSelection.clear();
+  if(subMode==='vertex'){
+    projVerts.forEach((p,i)=>{
+      if(p&&pointInLasso(p.x,p.y)) editSelection.add(i);
+    });
+  } else if(subMode==='edge'){
+    selectedObj.edges.forEach((e,i)=>{
+      const p1=projVerts[e[0]],p2=projVerts[e[1]];
+      if(p1&&p2&&pointInLasso(p1.x,p1.y)&&pointInLasso(p2.x,p2.y)) editSelection.add(i);
+    });
+  } else if(subMode==='face'){
+    selectedObj.faces.forEach((face,fi)=>{
+      const pts=face.map(i=>projVerts[i]).filter(p=>p);
+      if(pts.length>=3&&pts.every(p=>pointInLasso(p.x,p.y))) editSelection.add(fi);
+    });
+  }
+  render();
+}
+
+// ========== NORMALS ==========
+function flipNormals(){
+  // Flip selected faces (edit mode) or all faces (object mode)
+  if(!selectedObj){toast('Select an object');return;}
+  pushUndo();
+  const obj=selectedObj;
+  if(mode==='edit'&&editSelection.size>0&&subMode==='face'){
+    editSelection.forEach(fi=>{
+      obj.faces[fi]=obj.faces[fi].slice().reverse();
+    });
+    toast('Selected face normals flipped ✓');
+  } else {
+    obj.faces=obj.faces.map(f=>f.slice().reverse());
+    toast('All face normals flipped ✓');
+  }
+  render();
+}
+
+function recalcNormals(){
+  // Flood-fill winding consistency — propagates correct winding from face to face
+  // via shared edges. Doesn't rely on mesh centroid so works on any shape.
+  if(!selectedObj){toast('Select an object');return;}
+  pushUndo();
+  const obj=selectedObj;
+  const F=obj.faces;
+  const n=F.length;
+  if(n===0)return;
+
+  // Build edge→face adjacency: for each directed edge (a→b) store which face owns it
+  // A well-wound face has edge a→b; its neighbour should have b→a for that shared edge
+  const edgeFace=new Map(); // "a,b" → faceIndex (directed)
+  F.forEach((face,fi)=>{
+    for(let i=0;i<face.length;i++){
+      const a=face[i],b=face[(i+1)%face.length];
+      edgeFace.set(a+','+b,fi);
+    }
+  });
+
+  // Flood fill: start from face 0, propagate winding
+  const visited=new Array(n).fill(false);
+  const flipped=new Array(n).fill(false);
+  const queue=[0];
+  visited[0]=true;
+
+  while(queue.length){
+    const fi=queue.shift();
+    const face=F[fi];
+    for(let i=0;i<face.length;i++){
+      const a=face[i],b=face[(i+1)%face.length];
+      // Neighbour should have edge b→a
+      const ni=edgeFace.get(b+','+a); // correctly wound neighbour
+      const ni2=edgeFace.get(a+','+b); // same-direction = needs flip
+      const neighbour = ni!==undefined&&ni!==fi ? ni : (ni2!==undefined&&ni2!==fi ? ni2 : undefined);
+      if(neighbour===undefined||visited[neighbour])continue;
+      visited[neighbour]=true;
+      // If neighbour shares edge in same direction as current face → mismatched winding
+      if(edgeFace.get(a+','+b)===neighbour){
+        flipped[neighbour]=!flipped[fi]; // flip relative to current
+      } else {
+        flipped[neighbour]=flipped[fi];
+      }
+      queue.push(neighbour);
+    }
+  }
+
+  // Apply flips
+  let flipCount=0;
+  F.forEach((face,fi)=>{if(flipped[fi]){F[fi]=face.slice().reverse();flipCount++;}});
+
+  // Final pass: make sure majority of normals point outward (centroid check on result)
+  const centroid=obj.verts.reduce((s,v)=>v3add(s,v),V3(0,0,0));
+  const mc=v3mul(centroid,1/Math.max(1,obj.verts.length));
+  let outCount=0,inCount=0;
+  F.forEach(face=>{
+    if(face.length<3)return;
+    const v0=obj.verts[face[0]],v1=obj.verts[face[1]],v2=obj.verts[face[2]];
+    const nn=v3norm(v3cross(v3sub(v1,v0),v3sub(v2,v0)));
+    const fc=v3mul(face.reduce((s,i)=>v3add(s,obj.verts[i]),V3(0,0,0)),1/face.length);
+    if(v3dot(nn,v3sub(fc,mc))>0)outCount++;else inCount++;
+  });
+  // If majority point inward, flip everything
+  if(inCount>outCount){
+    F.forEach((face,fi)=>{F[fi]=face.slice().reverse();});
+    flipCount=n-flipCount;
+  }
+
+  rebuildEdges(obj);
+  toast('Normals recalculated — '+flipCount+' faces fixed ✓');
+  render();
+}
+
+// ========== MOBILE / TOUCH ==========
+let touch={
+  active: new Map(), // id -> {x,y}
+  lastDist: 0,
+  lastMidX: 0,
+  lastMidY: 0,
+  lastSingleX: 0,
+  lastSingleY: 0,
+  tapTimer: null,
+  longPressTimer: null,
+  moved: false
+};
+
+function toggleSidebar(){
+  const sb=document.getElementById('sidebar');
+  sb.classList.toggle('open');
+}
+
+function setMobileActive(id){
+  document.querySelectorAll('.mb-btn').forEach(b=>b.classList.remove('active'));
+  const el=document.getElementById(id);
+  if(el) el.classList.add('active');
+}
+
+function getTouchCenter(touches){
+  let x=0,y=0;
+  touches.forEach(t=>{x+=t.clientX;y+=t.clientY;});
+  return {x:x/touches.length, y:y/touches.length};
+}
+
+function getTouchDist(touches){
+  const arr=[...touches];
+  if(arr.length<2) return 0;
+  const dx=arr[0].clientX-arr[1].clientX;
+  const dy=arr[0].clientY-arr[1].clientY;
+  return Math.sqrt(dx*dx+dy*dy);
+}
+
+function canvasToLocal(cx,cy){
+  const rect=canvas.getBoundingClientRect();
+  const x=(cx-rect.left)*(canvas.width/rect.width);
+  const y=(cy-rect.top)*(canvas.height/rect.height);
+  return {x,y};
+}
+
+function initTouchEvents(){
+  canvas.addEventListener('touchstart',e=>{
+    e.preventDefault();
+    [...e.changedTouches].forEach(t=>touch.active.set(t.identifier,{x:t.clientX,y:t.clientY}));
+    touch.moved=false;
+
+    if(touch.active.size===1){
+      const t0=[...touch.active.values()][0];
+      const lp=canvasToLocal(t0.x,t0.y);
+      touch.lastSingleX=lp.x;
+      touch.lastSingleY=lp.y;
+
+      // Sculpt mode: start painting
+      if(mode==='sculpt'){
+        pushUndoDebounced();
+        sculpt.painting=true;
+        applySculptBrush(lp.x,lp.y);
+        render();
+        drawSculptCursor(lp.x,lp.y,canvas.width,canvas.height);
+        return;
+      }
+
+      // Long press → context menu
+      touch.longPressTimer=setTimeout(()=>{
+        if(!touch.moved){
+          const menu=document.getElementById('ctx-menu');
+          menu.style.display='block';
+          menu.style.left=t0.x+'px';
+          menu.style.top=t0.y+'px';
+        }
+      },600);
+
+    } else if(touch.active.size===2){
+      clearTimeout(touch.longPressTimer);
+      if(sculpt.painting){sculpt.painting=false;}
+      const arr=[...touch.active.values()];
+      touch.lastDist=getTouchDist(e.touches);
+      const mid=getTouchCenter(e.touches);
+      const lm=canvasToLocal(mid.x,mid.y);
+      touch.lastMidX=lm.x;
+      touch.lastMidY=lm.y;
+    }
+  },{passive:false});
+
+  canvas.addEventListener('touchmove',e=>{
+    e.preventDefault();
+    [...e.changedTouches].forEach(t=>touch.active.set(t.identifier,{x:t.clientX,y:t.clientY}));
+    touch.moved=true;
+    clearTimeout(touch.longPressTimer);
+
+    if(touch.active.size===1){
+      const t0=[...touch.active.values()][0];
+      const lp=canvasToLocal(t0.x,t0.y);
+      const dx=lp.x-touch.lastSingleX;
+      const dy=lp.y-touch.lastSingleY;
+
+      if(mode==='sculpt'&&sculpt.painting){
+        applySculptBrush(lp.x,lp.y);
+        render();
+        drawSculptCursor(lp.x,lp.y,canvas.width,canvas.height);
+      } else if(gizmo.active){
+        updateGizmo(lp.x,lp.y);
+        gizmo.lastMouse={x:lp.x,y:lp.y};
+        render();
+      } else {
+        // 1-finger orbit (right-hand viewport area)
+        const rect=canvas.getBoundingClientRect();
+        const relX=(t0.clientX-rect.left)/rect.width;
+        if(relX>0.15){ // avoid toolbar area
+          camera.azimuth-=dx*0.008;
+          camera.elevation=Math.max(-1.5,Math.min(1.5,camera.elevation+dy*0.008));
+          render();
+        }
+      }
+      touch.lastSingleX=lp.x;
+      touch.lastSingleY=lp.y;
+
+    } else if(touch.active.size===2){
+      const newDist=getTouchDist(e.touches);
+      const mid=getTouchCenter(e.touches);
+      const lm=canvasToLocal(mid.x,mid.y);
+
+      // Pinch = zoom
+      if(touch.lastDist>0){
+        const ratio=newDist/touch.lastDist;
+        camera.distance=Math.max(0.5,Math.min(80,camera.distance/ratio));
+      }
+
+      // 2-finger pan
+      const pdx=lm.x-touch.lastMidX;
+      const pdy=lm.y-touch.lastMidY;
+      const {right,up}=getViewMatrix();
+      const speed=camera.distance*0.004;
+      camera.target=v3sub(camera.target,v3mul(right,pdx*speed));
+      camera.target=v3add(camera.target,v3mul(up,pdy*speed));
+
+      touch.lastDist=newDist;
+      touch.lastMidX=lm.x;
+      touch.lastMidY=lm.y;
+      render();
+    }
+  },{passive:false});
+
+  canvas.addEventListener('touchend',e=>{
+    e.preventDefault();
+    [...e.changedTouches].forEach(t=>touch.active.delete(t.identifier));
+    clearTimeout(touch.longPressTimer);
+
+    if(sculpt.painting&&touch.active.size===0){
+      sculpt.painting=false;
+      render();
+    }
+    if(gizmo.active&&touch.active.size===0){
+      // Single tap while gizmo active = confirm
+      if(!touch.moved) confirmGizmo();
+    }
+    if(touch.active.size===0) touch.lastDist=0;
+
+    // Tap to select (if barely moved)
+    if(!touch.moved&&touch.active.size===0&&mode!=='sculpt'&&!gizmo.active){
+      const t0=e.changedTouches[0];
+      const lp=canvasToLocal(t0.clientX,t0.clientY);
+      if(mode==='object'&&tool==='select'){
+        const hit=pickObject(lp.x,lp.y);
+        selectObject(hit);
+        render();
+      } else if(mode==='edit'){
+        const idx=pickEditElement(lp.x,lp.y);
+        if(idx>=0){
+          editSelection.clear();
+          editSelection.add(idx);
+          render();
+        }
+      }
+    }
+  },{passive:false});
+}
+
+// ========== SCULPT MODE ==========
+const sculpt={
+  brush:'draw', radius:60, strength:0.35,
+  invert:false, xmirror:false, painting:false
+};
+
+function setSculptBrush(b){
+  sculpt.brush=b;
+  document.querySelectorAll('[id^="sbrush-"]').forEach(el=>el.classList.remove('btn-quad-active'));
+  const el=document.getElementById('sbrush-'+b);
+  if(el) el.classList.add('btn-quad-active');
+  toast(b[0].toUpperCase()+b.slice(1)+' brush');
+}
+
+function sculptSubdivide(){
+  if(!selectedObj){toast('Select an object');return;}
+  if(selectedObj.verts.length>10000){toast('Too dense (>10k verts)');return;}
+  pushUndo();
+  const obj=selectedObj;
+  const edgeMids=new Map();
+  function getMid(a,b){
+    const k=Math.min(a,b)+','+Math.max(a,b);
+    if(!edgeMids.has(k)){
+      obj.verts.push(v3mul(v3add(obj.verts[a],obj.verts[b]),0.5));
+      edgeMids.set(k,obj.verts.length-1);
+    }
+    return edgeMids.get(k);
+  }
+  const nf=[];
+  obj.faces.forEach(face=>{
+    if(face.length===4){
+      const m01=getMid(face[0],face[1]),m12=getMid(face[1],face[2]);
+      const m23=getMid(face[2],face[3]),m30=getMid(face[3],face[0]);
+      obj.verts.push(v3mul(face.reduce((s,i)=>v3add(s,obj.verts[i]),V3(0,0,0)),0.25));
+      const cc=obj.verts.length-1;
+      nf.push([face[0],m01,cc,m30],[face[1],m12,cc,m01],
+               [face[2],m23,cc,m12],[face[3],m30,cc,m23]);
+    } else if(face.length===3){
+      const m01=getMid(face[0],face[1]),m12=getMid(face[1],face[2]),m20=getMid(face[2],face[0]);
+      nf.push([face[0],m01,m20],[face[1],m12,m01],[face[2],m20,m12],[m01,m12,m20]);
+    } else { nf.push(face); }
+  });
+  obj.faces=nf;
+  rebuildEdges(obj);
+  toast('Subdivided → '+obj.verts.length+' verts');
+  render();
+}
+
+// Core sculpt: find which verts are within screen-space brush radius
+// and apply brush effect to them in world space
+function applySculptBrush(screenX, screenY){
+  if(!selectedObj){
+    // Auto select first object
+    if(objects.length>0) selectObject(objects[0]);
+    else return;
+  }
+  const obj=selectedObj;
+  const mObj=getObjectMatrix(obj);
+  const mInv=invertMat4Simple(mObj);
+  const {vx,vy,vw,vh,cam}=getActiveViewport();
+
+  // Project all verts to screen, find those within brush radius
+  const str=sculpt.strength*(sculpt.invert?-1:1);
+  const r=sculpt.radius;
+  let changed=false;
+
+  // Precompute per-vertex normals for normal-based brushes
+  const worldVerts=obj.verts.map(v=>mat4transform(mObj,v));
+  const vertNormals=worldVerts.map(()=>V3(0,0,0));
+  obj.faces.forEach(face=>{
+    if(face.length<3) return;
+    const v0=worldVerts[face[0]],v1=worldVerts[face[1]],v2=worldVerts[face[2]];
+    const n=v3norm(v3cross(v3sub(v1,v0),v3sub(v2,v0)));
+    face.forEach(vi=>{ vertNormals[vi]=v3add(vertNormals[vi],n); });
+  });
+  for(let i=0;i<vertNormals.length;i++) vertNormals[i]=v3norm(vertNormals[i]);
+
+  // For flatten/clay/scrape: average Y of verts in brush
+  let flatSum=0, flatCount=0;
+  if(sculpt.brush==='flatten'||sculpt.brush==='clay'||sculpt.brush==='scrape'){
+    for(let vi=0;vi<worldVerts.length;vi++){
+      const p=projectIn(worldVerts[vi],vx,vy,vw,vh,cam);
+      if(!p) continue;
+      const dx=p.x-vx-screenX, dy=p.y-vy-screenY;
+      if(dx*dx+dy*dy < r*r){ flatSum+=worldVerts[vi].y; flatCount++; }
+    }
+  }
+  const flatY=flatCount?flatSum/flatCount:0;
+
+  // For smooth: precompute neighbor averages
+  let neighborAvg=null;
+  if(sculpt.brush==='smooth'){
+    neighborAvg=worldVerts.map(v=>({x:v.x,y:v.y,z:v.z,n:1}));
+    obj.edges.forEach(e=>{
+      const a=worldVerts[e[0]],b=worldVerts[e[1]];
+      neighborAvg[e[0]].x+=b.x; neighborAvg[e[0]].y+=b.y; neighborAvg[e[0]].z+=b.z; neighborAvg[e[0]].n++;
+      neighborAvg[e[1]].x+=a.x; neighborAvg[e[1]].y+=a.y; neighborAvg[e[1]].z+=a.z; neighborAvg[e[1]].n++;
+    });
+  }
+
+  for(let vi=0;vi<worldVerts.length;vi++){
+    const wv=worldVerts[vi];
+    // Project vert to screen
+    const p=projectIn(wv,vx,vy,vw,vh,cam);
+    if(!p) continue;
+    // Distance from brush center in screen space
+    const sdx=p.x-vx-screenX, sdy=p.y-vy-screenY;
+    const sd2=sdx*sdx+sdy*sdy;
+    if(sd2>=r*r) continue;
+    const t=Math.sqrt(sd2)/r;
+    const falloff=1-t*t*(3-2*t); // smoothstep
+
+    // World-space move amount scaled by projected pixel size
+    // Estimate: 1 unit world = how many pixels?
+    const worldScale=cam.ortho
+      ? Math.min(vw,vh)/(cam.distance*1.2)
+      : (vh/2)/Math.tan(Math.PI/6)/Math.max(0.1,p.z);
+    const unitMove=Math.max(0.0001, 1/Math.max(1,worldScale));
+
+    const n=vertNormals[vi];
+    let delta=V3(0,0,0);
+
+    switch(sculpt.brush){
+      case 'draw':
+        delta=v3mul(n, str*falloff*r*unitMove*0.3);
+        break;
+      case 'smooth':{
+        const s=neighborAvg[vi];
+        const avg=V3(s.x/s.n,s.y/s.n,s.z/s.n);
+        delta=v3mul(v3sub(avg,wv), Math.abs(str)*falloff*0.5);
+        break;
+      }
+      case 'flatten':
+        delta=V3(0,(flatY-wv.y)*falloff*str*0.6,0);
+        break;
+      case 'pinch':
+        // Find geometric center of brush-affected verts
+        delta=v3mul(v3sub(
+          worldVerts.reduce((s,v,i)=>{
+            const pp=projectIn(v,vx,vy,vw,vh,cam);
+            if(!pp) return s;
+            const dd=(pp.x-vx-screenX)**2+(pp.y-vy-screenY)**2;
+            return dd<r*r?v3add(s,v):s;
+          },V3(0,0,0)),
+          v3mul(wv,1)
+        ), Math.abs(str)*falloff*0.02);
+        break;
+      case 'inflate':
+        delta=v3mul(n, str*falloff*r*unitMove*0.25);
+        break;
+      case 'crease':
+        delta=v3mul(n, -Math.abs(str)*falloff*r*unitMove*0.3);
+        break;
+      case 'clay':
+        delta=V3(0, Math.max(0,flatY+r*unitMove*0.05*str-wv.y)*falloff*0.5, 0);
+        break;
+      case 'scrape':
+        if((str>0&&wv.y>flatY)||(str<0&&wv.y<flatY))
+          delta=V3(0,(flatY-wv.y)*falloff*0.7,0);
+        break;
+    }
+
+    if(!delta.x&&!delta.y&&!delta.z) continue;
+    const newWorld=v3add(wv,delta);
+    obj.verts[vi]=mat4transform(mInv,newWorld);
+
+    // X-Mirror
+    if(sculpt.xmirror){
+      let bestMi=-1, bestD=Infinity;
+      const mx2=2*cursor3D.x-wv.x;
+      worldVerts.forEach((v2,j)=>{
+        if(j===vi) return;
+        const d=(v2.x-mx2)**2+(v2.y-wv.y)**2+(v2.z-wv.z)**2;
+        if(d<bestD){bestD=d;bestMi=j;}
+      });
+      if(bestMi>=0&&bestD<(r*unitMove*2)**2){
+        const mw=V3(2*cursor3D.x-newWorld.x,newWorld.y,newWorld.z);
+        obj.verts[bestMi]=mat4transform(mInv,mw);
+      }
+    }
+    changed=true;
+  }
+  if(changed){ rebuildEdges(obj); }
+}
+
+function drawSculptCursor(sx,sy){
+  // sx,sy: raw canvas coordinates
+  ctx.save();
+  ctx.strokeStyle='rgba(255,255,255,0.9)';
+  ctx.lineWidth=1.5;
+  ctx.setLineDash([5,4]);
+  ctx.beginPath();
+  ctx.arc(sx,sy,sculpt.radius,0,Math.PI*2);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // Dot
+  ctx.fillStyle='#fff';
+  ctx.beginPath();ctx.arc(sx,sy,2,0,Math.PI*2);ctx.fill();
+  // Strength arc
+  ctx.strokeStyle=sculpt.invert?'rgba(255,100,60,0.8)':'rgba(100,220,100,0.8)';
+  ctx.lineWidth=2.5;
+  ctx.beginPath();
+  ctx.arc(sx,sy,sculpt.radius-3,-Math.PI/2,-Math.PI/2+Math.PI*2*sculpt.strength);
+  ctx.stroke();
+  // Label
+  ctx.fillStyle='rgba(255,255,255,0.85)';
+  ctx.font='bold 11px Inter,sans-serif';
+  ctx.fillText(sculpt.brush,sx+sculpt.radius+6,sy+4);
+  ctx.restore();
+}
+
+// ========== SYMMETRY ==========
+
+// Mirror Object: creates a mirrored copy of the mesh and merges it
+// This is the reliable "apply mirror modifier" approach
+function mirrorObject(axis){
+  if(!selectedObj){toast('Select an object');return;}
+  pushUndo();
+  const obj=selectedObj;
+  const pivot=cursor3D;
+  const vCount=obj.verts.length;
+
+  // Duplicate and mirror all vertices
+  const mirroredVerts=obj.verts.map(v=>V3(
+    axis==='x'?2*pivot.x-v.x:v.x,
+    axis==='y'?2*pivot.y-v.y:v.y,
+    axis==='z'?2*pivot.z-v.z:v.z
+  ));
+  mirroredVerts.forEach(v=>obj.verts.push(v));
+
+  // Duplicate faces with flipped winding (offset by vCount)
+  const mirroredFaces=obj.faces.map(face=>
+    [...face].reverse().map(i=>i+vCount)
+  );
+  mirroredFaces.forEach(f=>obj.faces.push(f));
+
+  // Merge vertices that are very close (on the mirror plane)
+  const threshold=0.001;
+  const mergeMap=new Map();
+  // For each mirrored vert, check if original vert is at same position
+  for(let i=vCount;i<obj.verts.length;i++){
+    for(let j=0;j<vCount;j++){
+      if(v3len(v3sub(obj.verts[i],obj.verts[j]))<threshold){
+        mergeMap.set(i,j);
+        break;
+      }
+    }
+  }
+
+  // Remap faces to use merged verts
+  if(mergeMap.size>0){
+    obj.faces=obj.faces.map(face=>
+      [...new Set(face.map(vi=>mergeMap.has(vi)?mergeMap.get(vi):vi))]
+    ).filter(f=>f.length>=3);
+
+    // Remove merged verts
+    const removeSet=new Set(mergeMap.keys());
+    const oldToNew=[];
+    let cur=0;
+    for(let i=0;i<obj.verts.length;i++){
+      oldToNew.push(removeSet.has(i)?-1:cur++);
+    }
+    obj.verts=obj.verts.filter((_,i)=>!removeSet.has(i));
+    obj.faces=obj.faces.map(f=>f.map(vi=>oldToNew[vi]).filter(vi=>vi>=0)).filter(f=>f.length>=3);
+  }
+
+  rebuildEdges(obj);
+  editSelection.clear();
+  toast('Mirrored on '+axis.toUpperCase()+' ✓ — '+obj.verts.length+' verts');
+  render();
+}
+
+function toggleSym(axis){
+  symmetry[axis]=!symmetry[axis];
+  const active=symmetry[axis];
+  ['sym-','sp-'].forEach(prefix=>{
+    const btn=document.getElementById(prefix+axis);
+    if(btn) btn.classList.toggle('btn-quad-active', active);
+  });
+  toast('Mirror '+axis.toUpperCase()+': '+(active?'ON':'OFF'));
+  render();
+}
+
+function place3DCursor(mx,my){
+  // Unproject mouse to find world position on the grid plane (Y=0)
+  const {vx,vy,vw,vh,cam}=getActiveViewport();
+  const lx=mx-vx, ly=my-vy;
+  // Use projectIn inverse: find world point at Y=0 plane
+  const camX=cam.target.x+cam.distance*Math.cos(cam.elevation)*Math.sin(cam.azimuth);
+  const camY=cam.target.y+cam.distance*Math.sin(cam.elevation);
+  const camZ=cam.target.z+cam.distance*Math.cos(cam.elevation)*Math.cos(cam.azimuth);
+  const camPos=V3(camX,camY,camZ);
+  const forward=v3norm(v3sub(cam.target,camPos));
+  const up=V3(0,1,0);
+  const right=v3norm(v3cross(forward,up));
+  const actualUp=v3cross(right,forward);
+  // Screen to NDC
+  const ndcX=(lx-vw/2)/(vw/2);
+  const ndcY=-(ly-vh/2)/(vh/2);
+  let rayDir;
+  if(cam.ortho){
+    const scale=cam.distance*1.2/Math.min(vw,vh)*2;
+    const worldX=ndcX*vw*scale/2;
+    const worldY=ndcY*vh*scale/2;
+    const origin=v3add(camPos,v3add(v3mul(right,worldX),v3mul(actualUp,worldY)));
+    rayDir=forward;
+    // Intersect Y=0 plane
+    if(Math.abs(forward.y)>0.0001){
+      const t=-origin.y/forward.y;
+      cursor3D=v3add(origin,v3mul(forward,t));
+    }
+  } else {
+    const fov=Math.PI/3;
+    const aspect=vw/vh;
+    const tanHalfFov=Math.tan(fov/2);
+    rayDir=v3norm(v3add(v3add(forward,v3mul(right,ndcX*tanHalfFov*aspect)),v3mul(actualUp,ndcY*tanHalfFov)));
+    if(Math.abs(rayDir.y)>0.0001){
+      const t=-camPos.y/rayDir.y;
+      if(t>0) cursor3D=v3add(camPos,v3mul(rayDir,t));
+    }
+  }
+  cursor3D.y=0; // snap to Y=0 plane
+  toast('3D Cursor: '+cursor3D.x.toFixed(2)+', '+cursor3D.z.toFixed(2));
+  render();
+}
+
+// Mirror a vertex position across cursor on active symmetry axes
+function mirrorVert(v){
+  let mx=v.x, my=v.y, mz=v.z;
+  if(symmetry.x) mx=2*cursor3D.x-v.x;
+  if(symmetry.y) my=2*cursor3D.y-v.y;
+  if(symmetry.z) mz=2*cursor3D.z-v.z;
+  return V3(mx,my,mz);
+}
+
+// Apply symmetry after any edit operation that moved vertices
+// Build mirror index map for the object on each symmetry axis
+// Returns Map: vertIndex -> mirrorVertIndex (may be same if on mirror plane)
+// ========== MIRROR MODIFIER ==========
+// Creates a full mirrored copy of mesh geometry (Blender Mirror Modifier style)
+// Pivot = cursor3D. Applied non-destructively on export / on demand.
+
+function applyMirrorModifier(obj){
+  if(!symmetry.x&&!symmetry.y&&!symmetry.z){toast('Enable a symmetry axis first');return;}
+  pushUndo();
+
+  const pivot=cursor3D;
+  const origVertCount=obj.verts.length;
+  const origFaceCount=obj.faces.length;
+
+  // For each active axis, duplicate and mirror
+  ['x','y','z'].forEach(axis=>{
+    if(!symmetry[axis]) return;
+    const curVertCount=obj.verts.length;
+
+    // Duplicate all verts, mirroring on this axis
+    const newVertsStart=obj.verts.length;
+    obj.verts.forEach(v=>{
+      obj.verts.push(V3(
+        axis==='x'?2*pivot.x-v.x:v.x,
+        axis==='y'?2*pivot.y-v.y:v.y,
+        axis==='z'?2*pivot.z-v.z:v.z
+      ));
+    });
+
+    // Duplicate faces with mirrored vertex indices and reversed winding
+    const facesToMirror=obj.faces.slice(0,curVertCount>origVertCount?origFaceCount:obj.faces.length);
+    facesToMirror.forEach(face=>{
+      // Reverse winding for correct normals on mirrored side
+      obj.faces.push([...face].reverse().map(vi=>vi+newVertsStart));
+    });
+  });
+
+  // Weld vertices on the mirror seam (within threshold)
+  weldVertices(obj, 0.002);
+  rebuildEdges(obj);
+  toast('Mirror applied: '+obj.verts.length+' verts, '+obj.faces.length+' faces');
+  render();
+}
+
+function weldVertices(obj, threshold){
+  const n=obj.verts.length;
+  const remap=new Array(n);
+  for(let i=0;i<n;i++) remap[i]=i;
+
+  // Simple O(n²) weld — fine for typical mesh sizes
+  for(let i=0;i<n;i++){
+    if(remap[i]!==i) continue;
+    for(let j=i+1;j<n;j++){
+      if(remap[j]!==j) continue;
+      if(v3len(v3sub(obj.verts[i],obj.verts[j]))<threshold){
+        remap[j]=i;
+      }
+    }
+  }
+
+  // Remap to compact indices
+  const kept=[];
+  const compact=new Array(n);
+  for(let i=0;i<n;i++){
+    const ri=remap[i];
+    if(ri===i){compact[i]=kept.length;kept.push(obj.verts[i]);}
+    else compact[i]=compact[remap[i]];
+  }
+
+  obj.verts=kept;
+  obj.faces=obj.faces.map(face=>{
+    const nf=[...new Set(face.map(vi=>compact[vi]))];
+    return nf.length>=3?nf:null;
+  }).filter(Boolean);
+}
+
+// Find mirror partner for a vertex: looks for existing vert near mirrored position
+// Returns -1 if none found within threshold
+function findMirrorVert(obj, vi, axis, pivot, threshold=0.15){
+  const v=obj.verts[vi];
+  const mx=axis==='x'?2*pivot.x-v.x:v.x;
+  const my=axis==='y'?2*pivot.y-v.y:v.y;
+  const mz=axis==='z'?2*pivot.z-v.z:v.z;
+  // If vertex is on the mirror plane, no partner
+  const dist=axis==='x'?Math.abs(v.x-pivot.x):axis==='y'?Math.abs(v.y-pivot.y):Math.abs(v.z-pivot.z);
+  if(dist<threshold*0.1) return vi; // on plane — mirror to self
+  let bestVi=-1, bestD=threshold;
+  obj.verts.forEach((v2,j)=>{
+    if(j===vi) return;
+    const d=Math.sqrt((v2.x-mx)**2+(v2.y-my)**2+(v2.z-mz)**2);
+    if(d<bestD){bestD=d;bestVi=j;}
+  });
+  return bestVi;
+}
+
+// Get mirrored position of a vertex
+function getMirrorPos(v, axis, pivot){
+  return V3(
+    axis==='x'?2*pivot.x-v.x:v.x,
+    axis==='y'?2*pivot.y-v.y:v.y,
+    axis==='z'?2*pivot.z-v.z:v.z
+  );
+}
+
+// Apply symmetry: for each vert in movedSet, reflect it onto its mirror partner
+// If no partner exists, create one (add new vert + duplicate faces)
+function applySymmetry(obj, movedSet){
+  if(!symmetry.x&&!symmetry.y&&!symmetry.z) return;
+  if(!movedSet||movedSet.size===0) return;
+  const axes=['x','y','z'].filter(a=>symmetry[a]);
+  axes.forEach(axis=>{
+    const pivot=cursor3D;
+    movedSet.forEach(vi=>{
+      const mi=findMirrorVert(obj,vi,axis,pivot);
+      if(mi===vi) return; // on plane
+      if(mi>=0){
+        // Partner exists — move it to mirror position
+        obj.verts[mi]=getMirrorPos(obj.verts[vi],axis,pivot);
+      }
+      // If no partner: only move src, don't create (user should use Mirror Object)
+    });
+  });
+}
+
+// Draw 3D cursor in viewport
+function draw3DCursor(W,H){
+  const p=project(cursor3D,W,H);
+  if(!p) return;
+  const sz=10;
+  ctx.save();
+  ctx.strokeStyle='#e0e0e0';
+  ctx.lineWidth=1;
+  // Cross
+  ctx.beginPath();ctx.moveTo(p.x-sz,p.y);ctx.lineTo(p.x+sz,p.y);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(p.x,p.y-sz);ctx.lineTo(p.x,p.y+sz);ctx.stroke();
+  // Circle
+  ctx.beginPath();ctx.arc(p.x,p.y,4,0,Math.PI*2);
+  ctx.strokeStyle='#ff6b35';ctx.lineWidth=1.5;ctx.stroke();
+  // Symmetry axis indicators
+  if(symmetry.x||symmetry.y||symmetry.z){
+    ctx.fillStyle='rgba(255,107,53,0.15)';
+    ctx.font='9px Inter,sans-serif';
+    ctx.fillStyle='#ff6b35';
+    const axes=[];
+    if(symmetry.x)axes.push('X');
+    if(symmetry.y)axes.push('Y');
+    if(symmetry.z)axes.push('Z');
+    ctx.fillText(axes.join('+'),p.x+8,p.y-8);
+  }
+  ctx.restore();
+}
+
+function drawSymPlane(W,H){
+  if(!symmetry.x&&!symmetry.z) return;
+  const size=8;
+  ctx.save();
+  ctx.globalAlpha=0.12;
+  if(symmetry.x){
+    // Draw X mirror plane (vertical plane at cursor.x)
+    const pts=[];
+    for(let z=-size;z<=size;z+=size){
+      for(let y=-size;y<=size;y+=size){
+        const p=project(V3(cursor3D.x,y,z),W,H);
+        if(p)pts.push(p);
+      }
+    }
+    if(pts.length>=3){
+      ctx.fillStyle='#ff453a';
+      ctx.beginPath();
+      const corners=[
+        project(V3(cursor3D.x,-size,-size),W,H),
+        project(V3(cursor3D.x,-size,size),W,H),
+        project(V3(cursor3D.x,size,size),W,H),
+        project(V3(cursor3D.x,size,-size),W,H),
+      ].filter(Boolean);
+      if(corners.length>=3){
+        ctx.moveTo(corners[0].x,corners[0].y);
+        corners.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));
+        ctx.closePath();ctx.fill();
+      }
+    }
+  }
+  if(symmetry.z){
+    ctx.fillStyle='#4da3ff';
+    const corners=[
+      project(V3(-size,0,cursor3D.z),W,H),
+      project(V3(size,0,cursor3D.z),W,H),
+      project(V3(size,size*2,cursor3D.z),W,H),
+      project(V3(-size,size*2,cursor3D.z),W,H),
+    ].filter(Boolean);
+    if(corners.length>=3){
+      ctx.beginPath();
+      ctx.moveTo(corners[0].x,corners[0].y);
+      corners.slice(1).forEach(p=>ctx.lineTo(p.x,p.y));
+      ctx.closePath();ctx.fill();
+    }
+  }
+  ctx.globalAlpha=1;
+  ctx.restore();
+}
+
+// ========== MODAL GIZMO (Blender style G/R/S) ==========
+function snapshotState(){
+  if(!selectedObj)return null;
+  if(mode==='object'){
+    return {
+      mode:'object',
+      position:V3(selectedObj.position.x,selectedObj.position.y,selectedObj.position.z),
+      rotation:V3(selectedObj.rotation.x,selectedObj.rotation.y,selectedObj.rotation.z),
+      scale:V3(selectedObj.scale.x,selectedObj.scale.y,selectedObj.scale.z)
+    };
+  } else {
+    return {
+      mode:'edit',
+      verts:selectedObj.verts.map(v=>V3(v.x,v.y,v.z))
+    };
+  }
+}
+
+function restoreState(snap){
+  if(!selectedObj||!snap)return;
+  if(snap.mode==='object'){
+    selectedObj.position=V3(snap.position.x,snap.position.y,snap.position.z);
+    selectedObj.rotation=V3(snap.rotation.x,snap.rotation.y,snap.rotation.z);
+    selectedObj.scale=V3(snap.scale.x,snap.scale.y,snap.scale.z);
+  } else {
+    selectedObj.verts=snap.verts.map(v=>V3(v.x,v.y,v.z));
+  }
+}
+
+function startGizmo(type){
+  if(!selectedObj)return;
+  if(mode==='edit'&&editSelection.size===0){toast('Select an element first');return;}
+  pushUndo();
+  gizmo.active=true;
+  gizmo.type=type;
+  gizmo.axis=null;
+  gizmo.startMouse={x:mousePos.x,y:mousePos.y};
+  gizmo.lastMouse={x:mousePos.x,y:mousePos.y};
+  gizmo.startState=snapshotState();
+  gizmo.snapBase=null;
+  // Set the tool visually
+  setTool(type);
+  render();
+}
+
+function getGizmoAffectedVerts(){
+  // Returns array of vertex indices to transform
+  const obj=selectedObj;
+  const idxList=[...editSelection];
+  const affected=new Set();
+  if(subMode==='vertex') idxList.forEach(i=>affected.add(i));
+  else if(subMode==='edge') idxList.forEach(ei=>obj.edges[ei].forEach(vi=>affected.add(vi)));
+  else if(subMode==='face') idxList.forEach(fi=>obj.faces[fi].forEach(vi=>affected.add(vi)));
+  return [...affected];
+}
+
+function updateGizmo(mx,my){
+  if(!gizmo.active||!selectedObj)return;
+
+  // Delta from last frame (incremental — never restores state, safe after extrude)
+  const fdx=mx-gizmo.lastMouse.x;
+  const fdy=my-gizmo.lastMouse.y;
+  gizmo.lastMouse={x:mx,y:my};
+  if(fdx===0&&fdy===0)return;
+
+  const {right,up}=getViewMatrix();
+  const speed=camera.distance*0.007;
+
+  if(gizmo.type==='move'){
+    let delta;
+    if(gizmo.axis==='x')      delta=V3(fdx*speed,0,0);
+    else if(gizmo.axis==='y') delta=V3(0,-fdy*speed,0);
+    else if(gizmo.axis==='z') delta=V3(0,0,fdx*speed);
+    else                       delta=v3add(v3mul(right,fdx*speed),v3mul(up,-fdy*speed));
+
+    if(mode==='object'){
+      selectedObj.position=v3add(selectedObj.position,delta);
+      updateTransformPanel();
+    } else {
+      const mObj=getObjectMatrix(selectedObj);
+      const mInv=invertMat4Simple(mObj);
+      getGizmoAffectedVerts().forEach(vi=>{
+        const wv=mat4transform(mObj,selectedObj.verts[vi]);
+        selectedObj.verts[vi]=mat4transform(mInv,v3add(wv,delta));
+      });
+    }
+
+  } else if(gizmo.type==='rotate'){
+    const angle=(fdx+fdy)*0.012;
+    if(mode==='object'){
+      const ax=gizmo.axis||'y';
+      if(ax==='x') selectedObj.rotation.x+=angle;
+      else if(ax==='z') selectedObj.rotation.z+=angle;
+      else selectedObj.rotation.y+=angle;
+      updateTransformPanel();
+    } else {
+      const affVerts=getGizmoAffectedVerts();
+      const cen=affVerts.reduce((s,vi)=>v3add(s,selectedObj.verts[vi]),V3(0,0,0));
+      const pivot=v3mul(cen,1/affVerts.length);
+      const cosA=Math.cos(angle),sinA=Math.sin(angle);
+      const ax=gizmo.axis||'y';
+      affVerts.forEach(vi=>{
+        const r=v3sub(selectedObj.verts[vi],pivot);
+        let nv;
+        if(ax==='x')      nv=V3(r.x, r.y*cosA-r.z*sinA, r.y*sinA+r.z*cosA);
+        else if(ax==='z') nv=V3(r.x*cosA+r.y*sinA,-r.x*sinA+r.y*cosA,r.z);
+        else              nv=V3(r.x*cosA-r.z*sinA,r.y,r.x*sinA+r.z*cosA);
+        selectedObj.verts[vi]=v3add(pivot,nv);
+      });
+    }
+
+  } else if(gizmo.type==='scale'){
+    const factor=Math.max(0.01,1+(fdx-fdy)*0.008);
+    if(mode==='object'){
+      if(gizmo.axis==='x')      selectedObj.scale.x*=factor;
+      else if(gizmo.axis==='y') selectedObj.scale.y*=factor;
+      else if(gizmo.axis==='z') selectedObj.scale.z*=factor;
+      else { selectedObj.scale.x*=factor;selectedObj.scale.y*=factor;selectedObj.scale.z*=factor; }
+      updateTransformPanel();
+    } else {
+      const affVerts=getGizmoAffectedVerts();
+      const cen=affVerts.reduce((s,vi)=>v3add(s,selectedObj.verts[vi]),V3(0,0,0));
+      const pivot=v3mul(cen,1/affVerts.length);
+      affVerts.forEach(vi=>{
+        const r=v3sub(selectedObj.verts[vi],pivot);
+        let scaled;
+        if(gizmo.axis==='x')      scaled=V3(r.x*factor,r.y,r.z);
+        else if(gizmo.axis==='y') scaled=V3(r.x,r.y*factor,r.z);
+        else if(gizmo.axis==='z') scaled=V3(r.x,r.y,r.z*factor);
+        else                       scaled=v3mul(r,factor);
+        selectedObj.verts[vi]=v3add(pivot,scaled);
+      });
+    }
+  }
+  // Live symmetry mirror during drag
+  if(selectedObj&&(symmetry.x||symmetry.y||symmetry.z)){
+    if(mode==='edit'){
+      applySymmetry(selectedObj, new Set(getGizmoAffectedVerts()));
+    } else if(mode==='object'){
+      // Object mode: mirror the whole object's verts around cursor
+      const allVerts=new Set([...Array(selectedObj.verts.length).keys()]);
+      applySymmetry(selectedObj, allVerts);
+    }
+  }
+  render();
+}
+
+function confirmGizmo(){
+  gizmo.active=false;
+  gizmo.startState=null;
+  // Apply symmetry if any axis active
+  if(selectedObj&&(symmetry.x||symmetry.y||symmetry.z)){
+    const moved=mode==='edit'
+      ? new Set(getGizmoAffectedVerts())
+      : new Set([...Array(selectedObj.verts.length).keys()]);
+    applySymmetry(selectedObj,moved);
+  }
+  toast('Applied ✓');
+  render();
+}
+
+function cancelGizmo(){
+  if(!gizmo.active)return;
+  // Undo the pushUndo we did at startGizmo — pop last undo entry and restore
+  if(undoStack.length>0){
+    const {state,sel}=undoStack.pop();
+    objects=JSON.parse(state);
+    selectedObj=sel?objects.find(o=>o.id===sel)||null:null;
+    editSelection.clear();
+    updateObjList();
+    updateTransformPanel();
+  }
+  gizmo.active=false;
+  gizmo.startState=null;
+  toast('Cancelled');
+  render();
+}
+
+// ========== SIMPLE MAT4 INVERSE (for TRS matrices) ==========
+function invertMat4Simple(m){
+  // For TRS matrix, approximate inverse via transpose of rotation part
+  // This is a simplified version good enough for vertex editing
+  const tx=m[3],ty=m[7],tz=m[11];
+  const inv=[
+    m[0],m[4],m[8],-(m[0]*tx+m[4]*ty+m[8]*tz),
+    m[1],m[5],m[9],-(m[1]*tx+m[5]*ty+m[9]*tz),
+    m[2],m[6],m[10],-(m[2]*tx+m[6]*ty+m[10]*tz),
+    0,0,0,1
+  ];
+  return inv;
+}
+
+// ========== TOAST ==========
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.style.opacity=1;
+  clearTimeout(toast._t);
+  toast._t=setTimeout(()=>el.style.opacity=0,2000);
+}
+
+// ========== RESIZE ==========
+function resize(){
+  const vp=document.getElementById('viewport');
+  canvas.width=vp.clientWidth;
+  canvas.height=vp.clientHeight;
+  const lc=document.getElementById('lasso-canvas');
+  if(lc){lc.width=canvas.width;lc.height=canvas.height;}
+  render();
+}
+
+// ========== INIT ==========
+canvas=document.getElementById('c');
+ctx=canvas.getContext('2d');
+initEvents();
+initLasso();
+initTouchEvents();
+window.addEventListener('resize',resize);
+resize();
+
+// Start with a default cube
+addMesh('cube');
+setSculptBrush('draw'); // init sculpt UI
+// Show mobile hints
+if('ontouchstart' in window){
+  const h=document.getElementById('sculpt-touch-hint');
+  if(h) h.style.display='block';
+}
+toast('Welcome! 1:Face  2:Edge  3:Vertex  4:Object  G/W:Move  R:Rotate  S:Scale');
+</script>
+</body>
+</html>
